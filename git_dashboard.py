@@ -113,7 +113,8 @@ class ObservationTracker:
         if self.path and self.path.exists():
             try:
                 data = json.loads(self.path.read_text(encoding="utf-8"))
-                if data.get("version") != 1 or not isinstance(data.get("worktrees"), dict):
+                if (not isinstance(data, dict) or data.get("version") != 1
+                        or not isinstance(data.get("worktrees"), dict)):
                     raise ValueError("Unsupported state file")
                 self.states = data["worktrees"]
             except (OSError, ValueError, TypeError) as exc:

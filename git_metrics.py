@@ -45,8 +45,12 @@ def _environment() -> dict[str, str]:
     # A shell's temporary Git overrides must not redirect the configured path.
     for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
                 "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-                "GIT_PREFIX", "GIT_NAMESPACE", "GIT_EXTERNAL_DIFF"):
+                "GIT_PREFIX", "GIT_NAMESPACE", "GIT_EXTERNAL_DIFF", "GIT_CONFIG",
+                "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT"):
         env.pop(key, None)
+    for key in list(env):
+        if key.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")):
+            env.pop(key)
     env.update(GIT_TERMINAL_PROMPT="0", GIT_OPTIONAL_LOCKS="0",
                GIT_NO_LAZY_FETCH="1", GIT_PAGER="cat", LC_ALL="C", LANG="C")
     return env
@@ -139,6 +143,7 @@ class _Git:
             self.prefix.append("--no-lazy-fetch")
         self.prefix += ["-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
                         "-c", "diff.autoRefreshIndex=false", "-c", "diff.external=",
+                        "-c", "log.showSignature=false",
                         "-c", "submodule.recurse=false", "-c", "color.ui=false", "-C", str(path)]
         self.warnings: list[str] = []
 
@@ -435,7 +440,10 @@ def _history(git: _Git, *, ref: str, head: str | None, days: int, zone,
               "daily": [], "weekly": [], "recent": []}
     records = []
     if head:
-        raw = git.run("log", "--no-merges", "--numstat", "-z", "--find-renames", "-l1000",
+        # Shallow boundaries look like roots to Git; their full trees are not new work.
+        # Omit parentless deltas in shallow histories and retain the partial marker.
+        raw = git.run("-c", "log.showRoot=false" if shallow else "log.showRoot=true",
+                      "log", "--no-merges", "--numstat", "-z", "--find-renames", "-l1000",
                       "--no-ext-diff", "--no-textconv", "--submodule=short",
                       f"--since-as-filter={cutoff.isoformat()}", f"--max-count={max_commits + 1}",
                       "--format=%x00GIT_DASH_COMMIT%x00%H%x00%ct%x00%s%x00", head, "--")

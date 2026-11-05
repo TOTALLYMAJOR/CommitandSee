@@ -142,7 +142,9 @@ use `serve` for automatic updates. The dashboard also has an **Export JSON** but
 ## Clear numbers. Clear boundaries.
 
 - **History:** non-merge commits reachable from the selected ref, bucketed by
-  committer date. This is not an all-branches action ledger.
+  committer date. This is not an all-branches action ledger. In shallow clones,
+  parentless-commit line deltas are omitted because missing parents can turn old
+  code into apparent additions; history totals remain partial.
 - **Additions/deletions:** changed text lines, not total source LOC, productivity,
   correctness, or task completion. Binary changes are separate.
 - **Current tracked work:** HEAD to working tree. Staged and unstaged deltas are
@@ -161,7 +163,8 @@ use `serve` for automatic updates. The dashboard also has an **Export JSON** but
 
 The HTTP server binds to **127.0.0.1**. The observer does not stage, commit, push,
 merge, fetch, prune, reset, or delete repository work. Git observations disable
-optional locks and executable filesystem-monitor callbacks. Configured content
+optional locks, executable filesystem-monitor callbacks, and signature display.
+Temporary Git configuration overrides are scrubbed. Configured content
 filters can make working measurements unavailable rather than execute them.
 
 The dashboard does not retain file contents or patches. Paths, branch names,
@@ -187,7 +190,7 @@ been qualified in this workspace.
 ## Run the checks
 
 ```bash
-python3 -B -m unittest -v test_git_metrics.py test_dashboard.py
+python3 -B -m unittest -v test_git_metrics.py test_dashboard.py test_review_regressions.py
 ```
 
 Tests use disposable repositories and offline fixtures, without your credentials

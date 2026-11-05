@@ -5,10 +5,11 @@ This record concerns local validation, not CI, deployment, or human acceptance.
 
 ## Automated checks
 
-`python3 -B -m unittest -v test_git_metrics.py test_dashboard.py` passed all
-**21 tests** in 3.024 seconds during release preparation. The suite contains
-16 disposable Git integration cases and five dashboard/configuration/export/HTTP
-cases. No project test suites or hosted services were executed.
+`python3 -B -m unittest -v test_review_regressions.py test_git_metrics.py test_dashboard.py`
+passed all **26 tests** in 3.302 seconds after the review fixes. The original
+21 tests had passed independently; the added five tests reproduced failures on
+unchanged baseline `1c3f931` before passing with the fixes. No project test suites
+or hosted services were executed. See [review comparison](docs/REVIEW-COMPARISON.md).
 
 Covered cases include root commits and exact text churn, timezone buckets,
 selected refs, merge exclusion, cached-upstream divergence and missing upstreams,
@@ -51,7 +52,8 @@ The README image is a dated browser capture of this live view.
 The replacement was imported from `git-activity-dashboard.zip`, SHA-256
 `439e0d360ee0f6110e378633286db6b674fb9827adbdbab8c5bfe274ba8104a7`.
 All 11 original manifest entries matched before README and release-documentation
-edits. Runtime Python and dashboard HTML were retained from that archive. The
+edits. Dashboard HTML and demo data were retained from that archive. Runtime Python
+now includes the five reviewed corrections described in the comparison. The
 release checksum manifest is regenerated for the final package.
 
 The preceding implementation remains in Git history at
