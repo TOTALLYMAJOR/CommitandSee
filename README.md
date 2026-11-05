@@ -12,9 +12,9 @@ Python 3.11+ · Git 2.37+ · No third-party packages · Local-first
 
 </div>
 
-![Work Visibility live dashboard showing Git activity and pending work across SportPilot and Wale](docs/images/dashboard-live.png)
+![Work Visibility live dashboard showing the glass dashboard and live portfolio collection](docs/images/dashboard-live.png)
 
-*Actual local dashboard for SportPilot and Wale. This is a dated capture of selected local refs and working states; remote comparisons use cached information.*
+*Actual local portfolio capture during collection. Pending sources and partial totals remain visible; remote comparisons use cached information.*
 
 ---
 
@@ -23,8 +23,9 @@ waiting to be pushed, a stash you meant to revisit. **Work Visibility brings
 committed history and current local work into one dashboard.**
 
 Point it at your repositories, open your browser, and see what has changed and
-what still needs a closer look. No GitHub account, API token, cloud service,
-Node installation, or frontend build step is needed to run the dashboard.
+what still needs a closer look. No GitHub account, API token, Node installation, or frontend build step is
+needed. Public GitHub repositories require an Internet connection; local
+checkout observation works offline.
 
 ## What you get
 
@@ -58,6 +59,58 @@ the process is running and your machine is awake. Stop it with **Ctrl+C**.
 
 Want to look around first? Open the included [`demo.html`](demo.html) locally in
 your browser. It is a static, clearly labeled synthetic example.
+
+## Add a repository from the dashboard
+
+Run with a configuration file stored **outside monitored repositories**:
+
+```bash
+mkdir -p ~/.config/work-visibility
+cp config.example.json ~/.config/work-visibility/config.json
+# Set the initial repository paths in that file, then start:
+python3 git_dashboard.py serve --config ~/.config/work-visibility/config.json
+```
+
+Click **Add repository** and choose a source:
+
+- **Public GitHub repository:** paste `https://github.com/owner/repository`.
+  The dashboard checks anonymous access and downloads default-branch history
+  into its own bare Git cache. No local checkout is required.
+- **Local checkout:** enter an existing absolute checkout path to observe local
+  working files, branches, linked worktrees, and stashes.
+
+Optionally choose a display name and product. The dashboard validates Git
+identity, saves the configuration, and queues observation. Registered linked
+worktrees are included automatically; duplicate checkouts sharing the same Git
+common directory are rejected. Use WSL paths such as `/mnt/c/Users/...` for Windows
+checkouts when the observer runs in WSL.
+
+Local checkout observation does not modify checkout files or fetch refs. Public
+repository collection fetches into `public-repositories` beside the observation
+state file (by default `~/.git-activity-dashboard/public-repositories`). It uses
+anonymous HTTPS, disables hooks and inherited Git credentials/configuration, and
+never checks out or executes public repository files. Public history refreshes
+at `history_refresh_seconds` (minimum 60 seconds), and is bounded to a 2,000-commit
+depth and the existing per-command timeout. Shallow/truncated totals remain partial.
+Large repositories can consume disk/network bandwidth or exceed the timeout.
+GitHub rate limits and unavailable repositories produce explicit errors.
+
+Public sources do not reveal local working files, stashes, unpublished commits,
+PR status, or CI. Their local-work counts remain unknown. Independently configured
+local and public sources can overlap in commit history; aggregate counts are per
+configured source, not unique portfolio commits. Public GitHub HTTPS URLs are the
+supported remote type; private repositories and other hosts still need a local checkout. It is available on the loopback live server
+started with `--config`; static exports and `--repo` sessions cannot save additions.
+If configuration changes outside the dashboard, restart before adding another repo.
+
+The page opens immediately with pending rows while the first scan runs. Results
+arrive repository by repository. Large portfolios and Windows-mounted checkouts
+can take longer than the configured refresh interval; refresh is a target cadence,
+not a freshness guarantee.
+
+![Add repository dialog with public GitHub and local checkout choices](docs/images/add-repository.png)
+
+*Actual 390px browser capture of the insertion dialog.*
 
 ## Bring your repositories together
 

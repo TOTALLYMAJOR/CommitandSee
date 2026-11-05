@@ -16,7 +16,8 @@ from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
-from git_metrics import collect_repository
+from git_metrics import collect_repository, _Git, _git_capabilities
+from public_repositories import public_url, public_metadata, collect_public
 
 ROOT = Path(__file__).resolve().parent
 DEFAULTS = {
@@ -62,6 +63,12 @@ def read_config(args):
         raise ValueError("title and timezone must be strings.")
     configured = []
     for entry in repos:
+        if isinstance(entry, dict) and "url" in entry:
+            item = dict(entry)
+            item["url"] = public_url(item["url"])
+            item.update(path=item["url"], source_kind="public", ref="HEAD")
+            configured.append(item)
+            continue
         if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not entry["path"].strip():
             raise ValueError("Each repository needs a nonempty path string.")
         item = dict(entry)
@@ -70,7 +77,7 @@ def read_config(args):
         configured.append(item)
     for value in args.repo or []:
         configured.append({"path": str(Path(value).expanduser().resolve()), "product": "My repositories"})
-    if not configured:
+    if not configured and getattr(args, "command", None) != "serve":
         raise ValueError("Add --repo /path/to/repository (repeat for more repos), or use --config config.json.")
     for item in configured:
         item.setdefault("name", Path(item["path"]).name)
@@ -164,15 +171,35 @@ class DashboardCollector:
         self.config = config
         self.tracker = ObservationTracker(state_path)
         self.history_cache = {}
+        self.public_cache = {}
+        self.public_cache_root = (Path(state_path).expanduser().resolve().parent if state_path else Path.home() / ".git-activity-dashboard") / "public-repositories"
 
-    def collect(self, *, live=False):
+    def collect(self, *, live=False, on_progress=None):
         began = time.monotonic()
         result = {"schema_version": 1, "title": self.config["title"], "generated_at": utc_now(),
                   "timezone": self.config["timezone"], "refresh_seconds": self.config["refresh_seconds"],
                   "live": live, "demo": False, "repositories": [], "errors": [],
                   "collection_running": False, "source": "Local Git commands"}
         seen = {}
-        for item in self.config["repositories"]:
+        # Public items added through the form must not wait behind a large local scan.
+        for item in sorted(list(self.config["repositories"]), key=lambda r: not bool(r.get("url"))):
+            if item.get("url"):
+                for local in self.config["repositories"]:
+                    if not local.get("url") and self.public_cache_root.resolve().is_relative_to(Path(local["path"]).resolve()):
+                        raise ValueError("Public cache must be outside monitored repositories; use --state outside those paths.")
+                cached = self.public_cache.get(item["url"])
+                if cached and time.monotonic() - cached[0] < max(60, self.config["history_refresh_seconds"]):
+                    repo = copy.deepcopy(cached[1])
+                    if repo.get("history"):
+                        repo["history"]["cached"] = True
+                else:
+                    repo = collect_public(item, self.public_cache_root, self.config)
+                    self.public_cache[item["url"]] = (time.monotonic(), copy.deepcopy(repo))
+                repo.update(product=item["product"], products=[item["product"]], configured_paths=[item["path"]])
+                result["repositories"].append(repo)
+                if on_progress and on_progress(result):
+                    break
+                continue
             options = {"name": item["name"], "ref": item["ref"], "days": self.config["days"],
                        "timezone": self.config["timezone"], "max_commits": self.config["max_commits"],
                        "stale_days": self.config["stale_days"], "exclude_globs": item["exclude_globs"]}
@@ -181,6 +208,7 @@ class DashboardCollector:
                 identity = repo.get("id") or item["path"]
                 if repo.get("common_dir") and identity in seen:
                     kept = seen[identity]
+                    kept.setdefault("configured_paths", [kept["path"]]).append(item["path"])
                     if item["product"] not in kept["products"]:
                         kept["products"].append(item["product"])
                     result["errors"].append(f"{item['name']}: same Git common directory as {kept['name']}; counted once. First configured ref retained.")
@@ -207,6 +235,7 @@ class DashboardCollector:
                                           tuple(item["exclude_globs"]), datetime.now(timezone.utc).date().isoformat())
                             self.history_cache = {k: v for k, v in self.history_cache.items() if k[0] != identity}
                             self.history_cache[actual_key] = (time.monotonic(), copy.deepcopy(history))
+                repo["configured_paths"] = [item["path"]]
                 repo["product"] = item["product"]
                 repo["products"] = [item["product"]]
                 repo["stale_days"] = self.config["stale_days"]
@@ -219,6 +248,8 @@ class DashboardCollector:
                     "product": item["product"], "products": [item["product"]], "ref": item["ref"], "head": None,
                     "status": "error", "errors": [f"Collection failed: {type(exc).__name__}: {exc}"],
                     "warnings": [], "history": None, "worktrees": [], "branches": [], "remote_branches": [], "stashes": []})
+            if on_progress and on_progress(result):
+                break
         self.tracker.save()
         if self.tracker.error:
             result["errors"].append(self.tracker.error)
@@ -248,30 +279,141 @@ def export_html(path, snapshot):
     target.write_text(render_html(snapshot), encoding="utf-8")
 
 
+class RepositoryError(ValueError):
+    def __init__(self, code, message, status=400):
+        super().__init__(message)
+        self.code, self.status = code, status
+
+
 class LiveState:
-    def __init__(self, collector):
+    def __init__(self, collector, config_path=None):
         self.collector = collector
+        self.config_path = Path(config_path).expanduser().resolve() if config_path else None
+        self.config_digest = self.config_path.read_bytes() if self.config_path and self.config_path.exists() else None
         self.lock = threading.Lock()
+        self.write_lock = threading.Lock()
         self.stop = threading.Event()
-        self.snapshot = collector.collect(live=True)
+        self.wake = threading.Event()
+        self.snapshot = {"schema_version": 1, "title": collector.config["title"],
+            "timezone": collector.config["timezone"], "refresh_seconds": collector.config["refresh_seconds"],
+            "generated_at": utc_now(), "live": True, "demo": False, "errors": [],
+            "collection_running": True, "repositories": []}
+        self.publish(self.snapshot)
         self.worker = threading.Thread(target=self.loop, name="git-observer", daemon=True)
+
+    def publish(self, data):
+        with self.lock:
+            snapshot = copy.deepcopy(data)
+            paths = {p for r in snapshot["repositories"] for p in r.get("configured_paths", [r["path"]])}
+            previous = {r["path"]: r for r in self.snapshot.get("repositories", []) if r.get("status") != "pending"}
+            for item in self.collector.config["repositories"]:
+                if item["path"] not in paths and item["path"] in previous:
+                    snapshot["repositories"].append(copy.deepcopy(previous[item["path"]]))
+                    continue
+                if item["path"] not in paths:
+                    snapshot["repositories"].append({**item, "id": item["path"], "status": "pending",
+                        "history": None, "worktrees": [], "branches": [], "stashes": [],
+                        "source_status": {k: "pending" for k in ("history", "worktrees", "branches", "stashes")}})
+            snapshot["repository_management"] = self.config_path is not None
+            self.snapshot = snapshot
 
     def read(self):
         with self.lock:
             return copy.deepcopy(self.snapshot)
 
-    def loop(self):
-        while not self.stop.wait(self.collector.config["refresh_seconds"]):
-            with self.lock:
-                self.snapshot["collection_running"] = True
+    def add_repository(self, body):
+        if not self.config_path:
+            raise RepositoryError("read_only", "Start with --config to save repositories from the UI.", 403)
+        if not isinstance(body, dict) or set(body) - {"path", "url", "name", "product"}:
+            raise RepositoryError("invalid_input", "Supply either a local path or a public GitHub URL, optional name, and optional product.")
+        for key in ("path", "url", "name", "product"):
+            value = body.get(key, "")
+            if not isinstance(value, str) or len(value) > (4096 if key in ("path", "url") else 160) or any(ord(c) < 32 for c in value):
+                raise RepositoryError("invalid_input", "Invalid " + key + ".")
+        if body.get("url"):
+            if body.get("path"):
+                raise RepositoryError("invalid_input", "Choose either a public URL or a local path.")
             try:
-                data = self.collector.collect(live=True)
-                with self.lock:
-                    self.snapshot = data
+                url = public_url(body["url"])
+                public_metadata(url)
+            except ValueError as exc:
+                raise RepositoryError("invalid_public_repository", str(exc)) from None
+            with self.write_lock:
+                if any(r.get("url") == url for r in self.collector.config["repositories"]):
+                    raise RepositoryError("duplicate", "This public repository is already configured.", 409)
+                item = {"url": url, "path": url, "source_kind": "public", "ref": "HEAD",
+                    "name": body.get("name", "").strip() or url.rsplit("/", 1)[-1],
+                    "product": body.get("product", "").strip() or "Public repositories",
+                    "exclude_globs": list(self.collector.config["exclude_globs"])}
+                return self.save_repository(item)
+        path = Path(body.get("path", "").strip()).expanduser()
+        if not path.is_absolute() or not path.is_dir():
+            raise RepositoryError("invalid_path", "Enter an existing absolute local checkout path on this machine.")
+        try:
+            _, lazy = _git_capabilities()
+            git = _Git(path.resolve(), lazy)
+            root = Path(os.fsdecode(git.run("rev-parse", "--show-toplevel")).strip()).resolve()
+            common = Path(os.fsdecode(git.run("rev-parse", "--path-format=absolute", "--git-common-dir")).strip()).resolve()
+        except Exception:
+            raise RepositoryError("invalid_repository", "This path is not an accessible Git worktree.") from None
+        with self.write_lock:
+            config = self.collector.config
+            registered = {root}
+            raw_worktrees = git.run("worktree", "list", "--porcelain", "-z")
+            for field in raw_worktrees.split(b"\0"):
+                if field.startswith(b"worktree "):
+                    registered.add(Path(os.fsdecode(field[9:])).resolve())
+            known_common = {Path(r["common_dir"]).resolve() for r in self.read()["repositories"] if r.get("common_dir")}
+            if common in known_common:
+                raise RepositoryError("duplicate", "This Git repository is already configured.", 409)
+            for existing in config["repositories"]:
+                if existing.get("url"):
+                    continue
+                old = Path(existing["path"]).resolve()
+                if old in registered:
+                    raise RepositoryError("duplicate", "This repository or a linked worktree is already configured.", 409)
+            if self.config_path.is_relative_to(root) or self.config_path.is_relative_to(common):
+                raise RepositoryError("unsafe_config", "Move dashboard configuration outside the repository.", 409)
+            item = {"path": str(root), "name": body.get("name", "").strip() or root.name,
+                "product": body.get("product", "").strip() or "My repositories", "ref": "HEAD",
+                "exclude_globs": list(config["exclude_globs"])}
+            return self.save_repository(item)
+
+    def save_repository(self, item):
+        # Called under write_lock by both source types.
+        config = self.collector.config
+        for monitored in config["repositories"]:
+            if not monitored.get("url") and self.config_path.is_relative_to(Path(monitored["path"]).resolve()):
+                raise RepositoryError("unsafe_config", "Move dashboard configuration outside monitored repositories.", 409)
+        current = self.config_path.read_bytes() if self.config_path.exists() else None
+        if current != self.config_digest:
+            raise RepositoryError("config_changed", "Configuration changed outside the dashboard. Restart to reload it before adding a repository.", 409)
+        raw = json.loads(current) if current else dict(config)
+        raw["repositories"] = list(raw.get("repositories", [])) + [item]
+        atomic_json(self.config_path, raw)
+        self.config_digest = self.config_path.read_bytes()
+        # New items are visited first on the next pass.
+        config["repositories"] = [item] + list(config["repositories"])
+        self.publish(self.read())
+        self.wake.set()
+        return item
+
+    def loop(self):
+        while not self.stop.is_set():
+            self.wake.clear()
+            try:
+                def progress(data):
+                    data["collection_running"] = True
+                    self.publish(data)
+                    return self.wake.is_set() or self.stop.is_set()
+                data = self.collector.collect(live=True, on_progress=progress)
+                data["collection_running"] = False
+                self.publish(data)
             except Exception as exc:
                 with self.lock:
                     self.snapshot["collection_running"] = False
-                    self.snapshot["errors"] = [f"Refresh failed; retaining previous snapshot: {type(exc).__name__}: {exc}"]
+                    self.snapshot["errors"] = ["Refresh failed: " + type(exc).__name__]
+            self.wake.wait(self.collector.config["refresh_seconds"])
 
 
 def make_handler(state):
@@ -304,6 +446,36 @@ def make_handler(state):
             self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; frame-ancestors 'none'")
             self.end_headers()
             self.wfile.write(data)
+
+        def do_POST(self):
+            allowed = {f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}
+            if self.headers.get("Origin") not in allowed or "http://" + self.headers.get("Host", "") not in allowed:
+                self.send_error(403, "Local same-origin requests only")
+                return
+            if self.path != "/api/repositories":
+                self.send_error(404)
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= 8192 or self.headers.get("Content-Type", "").split(";")[0] != "application/json":
+                    raise RepositoryError("invalid_request", "Send a JSON object no larger than 8 KiB.")
+                self.connection.settimeout(5)
+                body = json.loads(self.rfile.read(length))
+                result, status = {"repository": state.add_repository(body)}, 201
+            except RepositoryError as exc:
+                result, status = {"error": {"code": exc.code, "message": str(exc)}}, exc.status
+            except (ValueError, UnicodeError):
+                result, status = {"error": {"code": "invalid_json", "message": "Invalid JSON request."}}, 400
+            except OSError:
+                result, status = {"error": {"code": "storage_failed", "message": "Could not save dashboard configuration."}}, 503
+            payload = json.dumps(result).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(payload)
 
         def log_message(self, *args):
             pass
@@ -355,7 +527,7 @@ def main(argv=None):
             print(f"Report: {Path(args.output).resolve()} ({ok}/{len(snapshot['repositories'])} repositories observed)")
             return 0 if ok else 2
         print("Collecting local Git data…", flush=True)
-        state = LiveState(collector)
+        state = LiveState(collector, args.config)
         server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(state))
         state.worker.start()
         print(f"Open http://127.0.0.1:{args.port} — refresh every {config['refresh_seconds']} seconds. Ctrl+C stops.", flush=True)
@@ -365,6 +537,7 @@ def main(argv=None):
             print("\nDashboard stopped.")
         finally:
             state.stop.set()
+            state.wake.set()
             server.server_close()
             state.worker.join(timeout=2)
         return 0

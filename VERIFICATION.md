@@ -69,3 +69,46 @@ Native Windows execution, authenticated GitHub transport, authoritative PR/merge
 status, deployments, native Wale/AgentFlow task integration, notifications, and
 production readiness are not established. No background system service is
 installed. This release provides a local dashboard while its process runs.
+
+## Local UI and repository registry revision — November 5, 2026
+
+- Local glass skin, SVG icons, and native WebGL; no new packages or external
+  asset requests observed in browser resource entries. Existing CSP retained.
+- Live page opens before the first repository scan finishes; pending sources
+  have unknown metrics. Completed results stream into the portfolio view.
+- Native browser Add repository submission against a disposable Git checkout
+  returned a persisted configuration entry, queued collection, and then rendered
+  observed history. Repository selection remained stable across refresh.
+- Desktop 1440x1000 and mobile 390x844 had no document overflow. Reduced-motion
+  emulation was recognized. Browser emitted WebGL ReadPixels performance
+  warnings during capture; GPU/battery performance has not been benchmarked.
+- Registry tests cover immediate startup, unknown pending metrics, retained
+  timestamps, linked-worktree duplicates, metadata preservation, Git-file byte
+  preservation, invalid paths, unsafe config location, failed writes, external
+  config changes, request bounds, Origin rejection, creation, and retries.
+- The 72-checkout live configuration remains outside this repository. Its first
+  complete scan is still pending; partial aggregate totals are not complete
+  workspace measurements. v0.1.0 is the earlier published release and is not
+  changed by this local revision.
+
+## Public repository correction — November 5, 2026
+
+- Kept Local checkout and added Public GitHub repository in the existing form.
+- Native browser submission added `https://github.com/octocat/Hello-World`,
+  persisted the canonical URL, and observed default branch `master` at
+  `7fd1a60b01f91b314f59955a4e4d4e80d8edf11d`. The sample's recent-window
+  history is zero; its local work is unobserved. This is real anonymous remote
+  collection alongside disposable local fixtures, not a hosted deployment.
+- A subsequent browser submission using Local checkout succeeded and retained
+  the public row. The source selector and modal fit 390px with reduced motion.
+- `python3 -B -m unittest -q`: 40 passed. Added URL/credential rejection, config
+  round-trip, isolated Git environment, bare-fixture LOC, remote-failure unknowns,
+  private/rate-limit response rejection, and interruption for newly queued work.
+- Public collection writes only monitor-owned bare caches and is bounded by a
+  2,000-commit depth and 30-second Git command timeout. Depth is not a byte or disk
+  quota. Initial public fetches require network; shallow totals remain partial.
+- Public and local source histories may overlap. This revision does not dedupe
+  commit history across independent configured sources or collect public PR/CI
+  states. Public GitHub URLs are supported; other remote hosts are not.
+- Relevant references: [Git fetch depth](https://git-scm.com/docs/git-fetch),
+  [GitHub public repository API](https://docs.github.com/en/rest/repos/repos).

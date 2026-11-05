@@ -57,7 +57,8 @@ def _environment() -> dict[str, str]:
 
 
 def _run(command: list[str], *, input_data: bytes | None = None,
-         limit: int = MAX_OUTPUT, timeout: float = COMMAND_TIMEOUT) -> tuple[int, bytes, bytes]:
+         limit: int = MAX_OUTPUT, timeout: float = COMMAND_TIMEOUT,
+         environment: dict[str, str] | None = None) -> tuple[int, bytes, bytes]:
     """Bound stdout/stderr while draining both pipes, without a shell."""
     chunks: list[list[bytes]] = [[], []]
     overflow = threading.Event()
@@ -68,7 +69,7 @@ def _run(command: list[str], *, input_data: bytes | None = None,
     try:
         process = subprocess.Popen(command, stdin=stdin_file or subprocess.DEVNULL,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   env=_environment())
+                                   env=_environment() if environment is None else environment)
     except (OSError, ValueError) as exc:
         if stdin_file is not None:
             stdin_file.close()
