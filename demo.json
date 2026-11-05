@@ -1,0 +1,1871 @@
+{
+  "schema_version": 1,
+  "title": "Git activity dashboard",
+  "generated_at": "2026-11-05T18:30:00+00:00",
+  "timezone": "America/Chicago",
+  "refresh_seconds": 30,
+  "live": false,
+  "demo": true,
+  "repositories": [
+    {
+      "id": "demo-0",
+      "name": "Frontend",
+      "path": "/demo/frontend",
+      "common_dir": "/demo/frontend/.git",
+      "ref": "main",
+      "head": "152d1cf2d912c0b47ab85242e86450251a763f9b",
+      "collected_at": "2026-11-05T18:30:00+00:00",
+      "status": "ok",
+      "errors": [],
+      "warnings": [],
+      "product": "Example product",
+      "products": [
+        "Example product"
+      ],
+      "stale_days": 14,
+      "exclude_globs": [],
+      "fetch_head_updated_at": "2026-11-05T17:30:00+00:00",
+      "history": {
+        "ref": "main",
+        "head": "152d1cf2d912c0b47ab85242e86450251a763f9b",
+        "days": 70,
+        "timezone": "America/Chicago",
+        "mode": "non-merge commits reachable from selected ref",
+        "commits": 152,
+        "total_added": 14769,
+        "total_deleted": 3767,
+        "binary_changes": 0,
+        "truncated": false,
+        "shallow": false,
+        "daily": [
+          {
+            "date": "2026-08-28",
+            "commits": 2,
+            "added": 76,
+            "deleted": 10
+          },
+          {
+            "date": "2026-08-29",
+            "commits": 1,
+            "added": 55,
+            "deleted": 16
+          },
+          {
+            "date": "2026-08-30",
+            "commits": 2,
+            "added": 144,
+            "deleted": 54
+          },
+          {
+            "date": "2026-08-31",
+            "commits": 4,
+            "added": 356,
+            "deleted": 152
+          },
+          {
+            "date": "2026-09-01",
+            "commits": 4,
+            "added": 424,
+            "deleted": 28
+          },
+          {
+            "date": "2026-09-02",
+            "commits": 3,
+            "added": 369,
+            "deleted": 54
+          },
+          {
+            "date": "2026-09-03",
+            "commits": 2,
+            "added": 280,
+            "deleted": 58
+          },
+          {
+            "date": "2026-09-04",
+            "commits": 1,
+            "added": 157,
+            "deleted": 40
+          },
+          {
+            "date": "2026-09-05",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-06",
+            "commits": 4,
+            "added": 264,
+            "deleted": 80
+          },
+          {
+            "date": "2026-09-07",
+            "commits": 1,
+            "added": 83,
+            "deleted": 31
+          },
+          {
+            "date": "2026-09-08",
+            "commits": 2,
+            "added": 200,
+            "deleted": 84
+          },
+          {
+            "date": "2026-09-09",
+            "commits": 3,
+            "added": 351,
+            "deleted": 33
+          },
+          {
+            "date": "2026-09-10",
+            "commits": 4,
+            "added": 536,
+            "deleted": 88
+          },
+          {
+            "date": "2026-09-11",
+            "commits": 4,
+            "added": 604,
+            "deleted": 132
+          },
+          {
+            "date": "2026-09-12",
+            "commits": 2,
+            "added": 86,
+            "deleted": 88
+          },
+          {
+            "date": "2026-09-13",
+            "commits": 1,
+            "added": 60,
+            "deleted": 13
+          },
+          {
+            "date": "2026-09-14",
+            "commits": 2,
+            "added": 154,
+            "deleted": 48
+          },
+          {
+            "date": "2026-09-15",
+            "commits": 1,
+            "added": 94,
+            "deleted": 35
+          },
+          {
+            "date": "2026-09-16",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-17",
+            "commits": 1,
+            "added": 128,
+            "deleted": 15
+          },
+          {
+            "date": "2026-09-18",
+            "commits": 1,
+            "added": 145,
+            "deleted": 26
+          },
+          {
+            "date": "2026-09-19",
+            "commits": 1,
+            "added": 162,
+            "deleted": 37
+          },
+          {
+            "date": "2026-09-20",
+            "commits": 1,
+            "added": 54,
+            "deleted": 6
+          },
+          {
+            "date": "2026-09-21",
+            "commits": 4,
+            "added": 284,
+            "deleted": 68
+          },
+          {
+            "date": "2026-09-22",
+            "commits": 4,
+            "added": 352,
+            "deleted": 112
+          },
+          {
+            "date": "2026-09-23",
+            "commits": 4,
+            "added": 420,
+            "deleted": 156
+          },
+          {
+            "date": "2026-09-24",
+            "commits": 7,
+            "added": 854,
+            "deleted": 56
+          },
+          {
+            "date": "2026-09-25",
+            "commits": 2,
+            "added": 278,
+            "deleted": 38
+          },
+          {
+            "date": "2026-09-26",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-27",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-28",
+            "commits": 1,
+            "added": 65,
+            "deleted": 10
+          },
+          {
+            "date": "2026-09-29",
+            "commits": 1,
+            "added": 82,
+            "deleted": 21
+          },
+          {
+            "date": "2026-09-30",
+            "commits": 2,
+            "added": 198,
+            "deleted": 64
+          },
+          {
+            "date": "2026-10-01",
+            "commits": 3,
+            "added": 348,
+            "deleted": 129
+          },
+          {
+            "date": "2026-10-02",
+            "commits": 4,
+            "added": 532,
+            "deleted": 48
+          },
+          {
+            "date": "2026-10-03",
+            "commits": 2,
+            "added": 300,
+            "deleted": 46
+          },
+          {
+            "date": "2026-10-04",
+            "commits": 2,
+            "added": 84,
+            "deleted": 68
+          },
+          {
+            "date": "2026-10-05",
+            "commits": 3,
+            "added": 177,
+            "deleted": 135
+          },
+          {
+            "date": "2026-10-06",
+            "commits": 2,
+            "added": 152,
+            "deleted": 28
+          },
+          {
+            "date": "2026-10-07",
+            "commits": 1,
+            "added": 93,
+            "deleted": 25
+          },
+          {
+            "date": "2026-10-08",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-09",
+            "commits": 1,
+            "added": 127,
+            "deleted": 5
+          },
+          {
+            "date": "2026-10-10",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-11",
+            "commits": 1,
+            "added": 161,
+            "deleted": 27
+          },
+          {
+            "date": "2026-10-12",
+            "commits": 3,
+            "added": 159,
+            "deleted": 114
+          },
+          {
+            "date": "2026-10-13",
+            "commits": 4,
+            "added": 280,
+            "deleted": 28
+          },
+          {
+            "date": "2026-10-14",
+            "commits": 4,
+            "added": 348,
+            "deleted": 72
+          },
+          {
+            "date": "2026-10-15",
+            "commits": 4,
+            "added": 416,
+            "deleted": 116
+          },
+          {
+            "date": "2026-10-16",
+            "commits": 7,
+            "added": 847,
+            "deleted": 280
+          },
+          {
+            "date": "2026-10-17",
+            "commits": 1,
+            "added": 138,
+            "deleted": 9
+          },
+          {
+            "date": "2026-10-18",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-19",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-20",
+            "commits": 1,
+            "added": 64,
+            "deleted": 42
+          },
+          {
+            "date": "2026-10-21",
+            "commits": 1,
+            "added": 81,
+            "deleted": 11
+          },
+          {
+            "date": "2026-10-22",
+            "commits": 2,
+            "added": 196,
+            "deleted": 44
+          },
+          {
+            "date": "2026-10-23",
+            "commits": 3,
+            "added": 345,
+            "deleted": 99
+          },
+          {
+            "date": "2026-10-24",
+            "commits": 2,
+            "added": 264,
+            "deleted": 88
+          },
+          {
+            "date": "2026-10-25",
+            "commits": 2,
+            "added": 298,
+            "deleted": 26
+          },
+          {
+            "date": "2026-10-26",
+            "commits": 4,
+            "added": 164,
+            "deleted": 96
+          },
+          {
+            "date": "2026-10-27",
+            "commits": 3,
+            "added": 174,
+            "deleted": 105
+          },
+          {
+            "date": "2026-10-28",
+            "commits": 2,
+            "added": 150,
+            "deleted": 92
+          },
+          {
+            "date": "2026-10-29",
+            "commits": 5,
+            "added": 460,
+            "deleted": 75
+          },
+          {
+            "date": "2026-10-30",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-31",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-11-01",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-11-02",
+            "commits": 2,
+            "added": 320,
+            "deleted": 34
+          },
+          {
+            "date": "2026-11-03",
+            "commits": 3,
+            "added": 156,
+            "deleted": 84
+          },
+          {
+            "date": "2026-11-04",
+            "commits": 4,
+            "added": 276,
+            "deleted": 156
+          },
+          {
+            "date": "2026-11-05",
+            "commits": 4,
+            "added": 344,
+            "deleted": 32
+          }
+        ],
+        "weekly": [
+          {
+            "date": "2026-08-24",
+            "commits": 5,
+            "added": 275,
+            "deleted": 80
+          },
+          {
+            "date": "2026-08-31",
+            "commits": 18,
+            "added": 1850,
+            "deleted": 412
+          },
+          {
+            "date": "2026-09-07",
+            "commits": 17,
+            "added": 1920,
+            "deleted": 469
+          },
+          {
+            "date": "2026-09-14",
+            "commits": 7,
+            "added": 737,
+            "deleted": 167
+          },
+          {
+            "date": "2026-09-21",
+            "commits": 21,
+            "added": 2188,
+            "deleted": 430
+          },
+          {
+            "date": "2026-09-28",
+            "commits": 15,
+            "added": 1609,
+            "deleted": 386
+          },
+          {
+            "date": "2026-10-05",
+            "commits": 8,
+            "added": 710,
+            "deleted": 220
+          },
+          {
+            "date": "2026-10-12",
+            "commits": 23,
+            "added": 2188,
+            "deleted": 619
+          },
+          {
+            "date": "2026-10-19",
+            "commits": 11,
+            "added": 1248,
+            "deleted": 310
+          },
+          {
+            "date": "2026-10-26",
+            "commits": 14,
+            "added": 948,
+            "deleted": 368
+          },
+          {
+            "date": "2026-11-02",
+            "commits": 13,
+            "added": 1096,
+            "deleted": 306
+          }
+        ],
+        "recent": [
+          {
+            "sha": "152d1cf2d912c0b47ab85242e86450251a763f9b",
+            "timestamp": "2026-11-05T15:05:00+00:00",
+            "subject": "Synthetic example commit \u2014 demonstration only",
+            "added": 114,
+            "deleted": 17,
+            "binary_changes": 0
+          }
+        ],
+        "collected_at": "2026-11-05T18:30:00+00:00",
+        "cached": false
+      },
+      "worktrees": [
+        {
+          "path": "/demo/frontend",
+          "branch": "feature/demo-1",
+          "head": "b9f367a15205468e24258ba74b0c219d2fc1d251",
+          "status": "ok",
+          "staged": 1,
+          "unstaged": 2,
+          "untracked": 0,
+          "conflicts": 0,
+          "dirty": true,
+          "files": [
+            {
+              "path": "src/example.py",
+              "index": ".",
+              "worktree": "M",
+              "kind": "tracked"
+            },
+            {
+              "path": "src/helper.py",
+              "index": ".",
+              "worktree": "M",
+              "kind": "tracked"
+            },
+            {
+              "path": "tests/example.test.py",
+              "index": "M",
+              "worktree": ".",
+              "kind": "tracked"
+            }
+          ],
+          "loc": {
+            "staged": {
+              "added": 14,
+              "deleted": 3,
+              "binary_files": 0
+            },
+            "unstaged": {
+              "added": 23,
+              "deleted": 7,
+              "binary_files": 0
+            },
+            "net": {
+              "added": 34,
+              "deleted": 8,
+              "binary_files": 0
+            }
+          },
+          "errors": [],
+          "fingerprint": "synthetic",
+          "first_seen_dirty_at": "2026-11-04T14:10:00+00:00",
+          "last_changed_at": "2026-11-05T16:05:00+00:00",
+          "observation_gap_seconds": null
+        }
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "sha": "152d1cf2d912c0b47ab85242e86450251a763f9b",
+          "committed_at": "2026-11-05T15:05:00+00:00",
+          "age_days": 0,
+          "upstream": "origin/main",
+          "upstream_state": "cached",
+          "ahead": 0,
+          "behind": 0,
+          "merged_into_ref": true
+        },
+        {
+          "name": "feature/demo-1",
+          "sha": "b9f367a15205468e24258ba74b0c219d2fc1d251",
+          "committed_at": "2026-11-05T16:05:00+00:00",
+          "age_days": 0,
+          "upstream": "origin/feature/demo-1",
+          "upstream_state": "cached",
+          "ahead": 3,
+          "behind": 0,
+          "merged_into_ref": false
+        }
+      ],
+      "remote_branches": [
+        {
+          "name": "origin/feature/demo-1",
+          "sha": "db04eaf1d58408654e32c497f3b1e1875366fd32",
+          "committed_at": "2026-10-18T10:15:00+00:00",
+          "age_days": 18,
+          "merged_into_ref": false
+        }
+      ],
+      "stashes": [],
+      "source_status": {
+        "history": "ok",
+        "worktrees": "ok",
+        "branches": "ok",
+        "stashes": "ok"
+      }
+    },
+    {
+      "id": "demo-1",
+      "name": "API service",
+      "path": "/demo/api-service",
+      "common_dir": "/demo/api-service/.git",
+      "ref": "main",
+      "head": "3a392eaedec463b2ed94b286ee5e16a85e88a76d",
+      "collected_at": "2026-11-05T18:30:00+00:00",
+      "status": "ok",
+      "errors": [],
+      "warnings": [],
+      "product": "Example product",
+      "products": [
+        "Example product"
+      ],
+      "stale_days": 14,
+      "exclude_globs": [],
+      "fetch_head_updated_at": "2026-11-05T17:30:00+00:00",
+      "history": {
+        "ref": "main",
+        "head": "3a392eaedec463b2ed94b286ee5e16a85e88a76d",
+        "days": 70,
+        "timezone": "America/Chicago",
+        "mode": "non-merge commits reachable from selected ref",
+        "commits": 192,
+        "total_added": 19993,
+        "total_deleted": 4936,
+        "binary_changes": 0,
+        "truncated": false,
+        "shallow": false,
+        "daily": [
+          {
+            "date": "2026-08-28",
+            "commits": 5,
+            "added": 305,
+            "deleted": 60
+          },
+          {
+            "date": "2026-08-29",
+            "commits": 2,
+            "added": 156,
+            "deleted": 46
+          },
+          {
+            "date": "2026-08-30",
+            "commits": 2,
+            "added": 190,
+            "deleted": 68
+          },
+          {
+            "date": "2026-08-31",
+            "commits": 4,
+            "added": 448,
+            "deleted": 180
+          },
+          {
+            "date": "2026-09-01",
+            "commits": 2,
+            "added": 258,
+            "deleted": 28
+          },
+          {
+            "date": "2026-09-02",
+            "commits": 1,
+            "added": 146,
+            "deleted": 25
+          },
+          {
+            "date": "2026-09-03",
+            "commits": 1,
+            "added": 38,
+            "deleted": 36
+          },
+          {
+            "date": "2026-09-04",
+            "commits": 1,
+            "added": 55,
+            "deleted": 5
+          },
+          {
+            "date": "2026-09-05",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-06",
+            "commits": 6,
+            "added": 534,
+            "deleted": 162
+          },
+          {
+            "date": "2026-09-07",
+            "commits": 4,
+            "added": 424,
+            "deleted": 152
+          },
+          {
+            "date": "2026-09-08",
+            "commits": 5,
+            "added": 615,
+            "deleted": 35
+          },
+          {
+            "date": "2026-09-09",
+            "commits": 5,
+            "added": 700,
+            "deleted": 90
+          },
+          {
+            "date": "2026-09-10",
+            "commits": 5,
+            "added": 785,
+            "deleted": 145
+          },
+          {
+            "date": "2026-09-11",
+            "commits": 4,
+            "added": 196,
+            "deleted": 160
+          },
+          {
+            "date": "2026-09-12",
+            "commits": 1,
+            "added": 66,
+            "deleted": 9
+          },
+          {
+            "date": "2026-09-13",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-14",
+            "commits": 1,
+            "added": 100,
+            "deleted": 31
+          },
+          {
+            "date": "2026-09-15",
+            "commits": 1,
+            "added": 117,
+            "deleted": 42
+          },
+          {
+            "date": "2026-09-16",
+            "commits": 1,
+            "added": 134,
+            "deleted": 11
+          },
+          {
+            "date": "2026-09-17",
+            "commits": 2,
+            "added": 302,
+            "deleted": 44
+          },
+          {
+            "date": "2026-09-18",
+            "commits": 4,
+            "added": 172,
+            "deleted": 132
+          },
+          {
+            "date": "2026-09-19",
+            "commits": 2,
+            "added": 120,
+            "deleted": 88
+          },
+          {
+            "date": "2026-09-20",
+            "commits": 2,
+            "added": 154,
+            "deleted": 26
+          },
+          {
+            "date": "2026-09-21",
+            "commits": 5,
+            "added": 470,
+            "deleted": 120
+          },
+          {
+            "date": "2026-09-22",
+            "commits": 4,
+            "added": 444,
+            "deleted": 140
+          },
+          {
+            "date": "2026-09-23",
+            "commits": 3,
+            "added": 384,
+            "deleted": 138
+          },
+          {
+            "date": "2026-09-24",
+            "commits": 6,
+            "added": 870,
+            "deleted": 90
+          },
+          {
+            "date": "2026-09-25",
+            "commits": 1,
+            "added": 162,
+            "deleted": 26
+          },
+          {
+            "date": "2026-09-26",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-27",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-28",
+            "commits": 2,
+            "added": 176,
+            "deleted": 34
+          },
+          {
+            "date": "2026-09-29",
+            "commits": 4,
+            "added": 420,
+            "deleted": 112
+          },
+          {
+            "date": "2026-09-30",
+            "commits": 5,
+            "added": 610,
+            "deleted": 195
+          },
+          {
+            "date": "2026-10-01",
+            "commits": 5,
+            "added": 695,
+            "deleted": 40
+          },
+          {
+            "date": "2026-10-02",
+            "commits": 5,
+            "added": 780,
+            "deleted": 95
+          },
+          {
+            "date": "2026-10-03",
+            "commits": 2,
+            "added": 96,
+            "deleted": 60
+          },
+          {
+            "date": "2026-10-04",
+            "commits": 1,
+            "added": 65,
+            "deleted": 41
+          },
+          {
+            "date": "2026-10-05",
+            "commits": 1,
+            "added": 82,
+            "deleted": 10
+          },
+          {
+            "date": "2026-10-06",
+            "commits": 1,
+            "added": 99,
+            "deleted": 21
+          },
+          {
+            "date": "2026-10-07",
+            "commits": 1,
+            "added": 116,
+            "deleted": 32
+          },
+          {
+            "date": "2026-10-08",
+            "commits": 1,
+            "added": 133,
+            "deleted": 43
+          },
+          {
+            "date": "2026-10-09",
+            "commits": 2,
+            "added": 300,
+            "deleted": 24
+          },
+          {
+            "date": "2026-10-10",
+            "commits": 2,
+            "added": 84,
+            "deleted": 46
+          },
+          {
+            "date": "2026-10-11",
+            "commits": 2,
+            "added": 118,
+            "deleted": 68
+          },
+          {
+            "date": "2026-10-12",
+            "commits": 5,
+            "added": 380,
+            "deleted": 225
+          },
+          {
+            "date": "2026-10-13",
+            "commits": 5,
+            "added": 465,
+            "deleted": 70
+          },
+          {
+            "date": "2026-10-14",
+            "commits": 4,
+            "added": 440,
+            "deleted": 100
+          },
+          {
+            "date": "2026-10-15",
+            "commits": 3,
+            "added": 381,
+            "deleted": 108
+          },
+          {
+            "date": "2026-10-16",
+            "commits": 6,
+            "added": 864,
+            "deleted": 30
+          },
+          {
+            "date": "2026-10-17",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-18",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-19",
+            "commits": 1,
+            "added": 70,
+            "deleted": 38
+          },
+          {
+            "date": "2026-10-20",
+            "commits": 2,
+            "added": 174,
+            "deleted": 14
+          },
+          {
+            "date": "2026-10-21",
+            "commits": 4,
+            "added": 416,
+            "deleted": 72
+          },
+          {
+            "date": "2026-10-22",
+            "commits": 5,
+            "added": 605,
+            "deleted": 145
+          },
+          {
+            "date": "2026-10-23",
+            "commits": 5,
+            "added": 690,
+            "deleted": 200
+          },
+          {
+            "date": "2026-10-24",
+            "commits": 2,
+            "added": 310,
+            "deleted": 18
+          },
+          {
+            "date": "2026-10-25",
+            "commits": 2,
+            "added": 94,
+            "deleted": 40
+          },
+          {
+            "date": "2026-10-26",
+            "commits": 3,
+            "added": 192,
+            "deleted": 93
+          },
+          {
+            "date": "2026-10-27",
+            "commits": 1,
+            "added": 81,
+            "deleted": 42
+          },
+          {
+            "date": "2026-10-28",
+            "commits": 1,
+            "added": 98,
+            "deleted": 11
+          },
+          {
+            "date": "2026-10-29",
+            "commits": 6,
+            "added": 690,
+            "deleted": 132
+          },
+          {
+            "date": "2026-10-30",
+            "commits": 1,
+            "added": 132,
+            "deleted": 33
+          },
+          {
+            "date": "2026-10-31",
+            "commits": 1,
+            "added": 149,
+            "deleted": 44
+          },
+          {
+            "date": "2026-11-01",
+            "commits": 2,
+            "added": 82,
+            "deleted": 26
+          },
+          {
+            "date": "2026-11-02",
+            "commits": 5,
+            "added": 290,
+            "deleted": 120
+          },
+          {
+            "date": "2026-11-03",
+            "commits": 5,
+            "added": 375,
+            "deleted": 175
+          },
+          {
+            "date": "2026-11-04",
+            "commits": 5,
+            "added": 460,
+            "deleted": 230
+          },
+          {
+            "date": "2026-11-05",
+            "commits": 4,
+            "added": 436,
+            "deleted": 60
+          }
+        ],
+        "weekly": [
+          {
+            "date": "2026-08-24",
+            "commits": 9,
+            "added": 651,
+            "deleted": 174
+          },
+          {
+            "date": "2026-08-31",
+            "commits": 15,
+            "added": 1479,
+            "deleted": 436
+          },
+          {
+            "date": "2026-09-07",
+            "commits": 24,
+            "added": 2786,
+            "deleted": 591
+          },
+          {
+            "date": "2026-09-14",
+            "commits": 13,
+            "added": 1099,
+            "deleted": 374
+          },
+          {
+            "date": "2026-09-21",
+            "commits": 19,
+            "added": 2330,
+            "deleted": 514
+          },
+          {
+            "date": "2026-09-28",
+            "commits": 24,
+            "added": 2842,
+            "deleted": 577
+          },
+          {
+            "date": "2026-10-05",
+            "commits": 10,
+            "added": 932,
+            "deleted": 244
+          },
+          {
+            "date": "2026-10-12",
+            "commits": 23,
+            "added": 2530,
+            "deleted": 533
+          },
+          {
+            "date": "2026-10-19",
+            "commits": 21,
+            "added": 2359,
+            "deleted": 527
+          },
+          {
+            "date": "2026-10-26",
+            "commits": 15,
+            "added": 1424,
+            "deleted": 381
+          },
+          {
+            "date": "2026-11-02",
+            "commits": 19,
+            "added": 1561,
+            "deleted": 585
+          }
+        ],
+        "recent": [
+          {
+            "sha": "3a392eaedec463b2ed94b286ee5e16a85e88a76d",
+            "timestamp": "2026-11-05T15:05:00+00:00",
+            "subject": "Synthetic example commit \u2014 demonstration only",
+            "added": 114,
+            "deleted": 17,
+            "binary_changes": 0
+          }
+        ],
+        "collected_at": "2026-11-05T18:30:00+00:00",
+        "cached": false
+      },
+      "worktrees": [
+        {
+          "path": "/demo/api-service",
+          "branch": "feature/demo-2",
+          "head": "d67a88e58a61e5ee682b49de2b364cedeae293a3",
+          "status": "ok",
+          "staged": 0,
+          "unstaged": 2,
+          "untracked": 1,
+          "conflicts": 0,
+          "dirty": true,
+          "files": [
+            {
+              "path": "src/example.py",
+              "index": ".",
+              "worktree": "M",
+              "kind": "tracked"
+            },
+            {
+              "path": "src/helper.py",
+              "index": ".",
+              "worktree": "M",
+              "kind": "tracked"
+            },
+            {
+              "path": "notes.txt",
+              "index": "?",
+              "worktree": "?",
+              "kind": "untracked"
+            }
+          ],
+          "loc": {
+            "staged": {
+              "added": 0,
+              "deleted": 0,
+              "binary_files": 0
+            },
+            "unstaged": {
+              "added": 23,
+              "deleted": 7,
+              "binary_files": 0
+            },
+            "net": {
+              "added": 23,
+              "deleted": 7,
+              "binary_files": 0
+            }
+          },
+          "errors": [],
+          "fingerprint": "synthetic",
+          "first_seen_dirty_at": "2026-11-04T14:10:00+00:00",
+          "last_changed_at": "2026-11-05T16:05:00+00:00",
+          "observation_gap_seconds": null
+        }
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "sha": "3a392eaedec463b2ed94b286ee5e16a85e88a76d",
+          "committed_at": "2026-11-05T15:05:00+00:00",
+          "age_days": 0,
+          "upstream": "origin/main",
+          "upstream_state": "cached",
+          "ahead": 0,
+          "behind": 0,
+          "merged_into_ref": true
+        },
+        {
+          "name": "feature/demo-2",
+          "sha": "d67a88e58a61e5ee682b49de2b364cedeae293a3",
+          "committed_at": "2026-10-18T10:15:00+00:00",
+          "age_days": 18,
+          "upstream": "origin/feature/demo-2",
+          "upstream_state": "cached",
+          "ahead": 1,
+          "behind": 0,
+          "merged_into_ref": false
+        }
+      ],
+      "remote_branches": [
+        {
+          "name": "origin/feature/demo-2",
+          "sha": "7c36b0736e3ac70e8e0897049ef83edce452a1c5",
+          "committed_at": "2026-10-18T10:15:00+00:00",
+          "age_days": 18,
+          "merged_into_ref": false
+        }
+      ],
+      "stashes": [
+        {
+          "ref": "stash@{0}",
+          "sha": "3a392eaedec463b2ed94b286ee5e16a85e88a76d",
+          "timestamp": "2026-10-27T12:00:00+00:00",
+          "subject": "Synthetic parked experiment"
+        }
+      ],
+      "source_status": {
+        "history": "ok",
+        "worktrees": "ok",
+        "branches": "ok",
+        "stashes": "ok"
+      }
+    },
+    {
+      "id": "demo-2",
+      "name": "Shared library",
+      "path": "/demo/shared-library",
+      "common_dir": "/demo/shared-library/.git",
+      "ref": "main",
+      "head": "24142cee24ff26ff1e670adb35b448a900c0c8a1",
+      "collected_at": "2026-11-05T18:30:00+00:00",
+      "status": "ok",
+      "errors": [],
+      "warnings": [],
+      "product": "Example product",
+      "products": [
+        "Example product"
+      ],
+      "stale_days": 14,
+      "exclude_globs": [],
+      "fetch_head_updated_at": "2026-11-05T17:30:00+00:00",
+      "history": {
+        "ref": "main",
+        "head": "24142cee24ff26ff1e670adb35b448a900c0c8a1",
+        "days": 70,
+        "timezone": "America/Chicago",
+        "mode": "non-merge commits reachable from selected ref",
+        "commits": 214,
+        "total_added": 22087,
+        "total_deleted": 5545,
+        "binary_changes": 0,
+        "truncated": false,
+        "shallow": false,
+        "daily": [
+          {
+            "date": "2026-08-28",
+            "commits": 5,
+            "added": 420,
+            "deleted": 95
+          },
+          {
+            "date": "2026-08-29",
+            "commits": 2,
+            "added": 202,
+            "deleted": 60
+          },
+          {
+            "date": "2026-08-30",
+            "commits": 1,
+            "added": 118,
+            "deleted": 41
+          },
+          {
+            "date": "2026-08-31",
+            "commits": 2,
+            "added": 270,
+            "deleted": 20
+          },
+          {
+            "date": "2026-09-01",
+            "commits": 1,
+            "added": 152,
+            "deleted": 21
+          },
+          {
+            "date": "2026-09-02",
+            "commits": 1,
+            "added": 44,
+            "deleted": 32
+          },
+          {
+            "date": "2026-09-03",
+            "commits": 1,
+            "added": 61,
+            "deleted": 43
+          },
+          {
+            "date": "2026-09-04",
+            "commits": 2,
+            "added": 156,
+            "deleted": 24
+          },
+          {
+            "date": "2026-09-05",
+            "commits": 2,
+            "added": 190,
+            "deleted": 46
+          },
+          {
+            "date": "2026-09-06",
+            "commits": 8,
+            "added": 896,
+            "deleted": 272
+          },
+          {
+            "date": "2026-09-07",
+            "commits": 6,
+            "added": 774,
+            "deleted": 270
+          },
+          {
+            "date": "2026-09-08",
+            "commits": 5,
+            "added": 730,
+            "deleted": 70
+          },
+          {
+            "date": "2026-09-09",
+            "commits": 5,
+            "added": 190,
+            "deleted": 125
+          },
+          {
+            "date": "2026-09-10",
+            "commits": 3,
+            "added": 165,
+            "deleted": 108
+          },
+          {
+            "date": "2026-09-11",
+            "commits": 2,
+            "added": 144,
+            "deleted": 10
+          },
+          {
+            "date": "2026-09-12",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-13",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-09-14",
+            "commits": 1,
+            "added": 123,
+            "deleted": 38
+          },
+          {
+            "date": "2026-09-15",
+            "commits": 2,
+            "added": 280,
+            "deleted": 14
+          },
+          {
+            "date": "2026-09-16",
+            "commits": 4,
+            "added": 628,
+            "deleted": 72
+          },
+          {
+            "date": "2026-09-17",
+            "commits": 5,
+            "added": 245,
+            "deleted": 145
+          },
+          {
+            "date": "2026-09-18",
+            "commits": 6,
+            "added": 396,
+            "deleted": 240
+          },
+          {
+            "date": "2026-09-19",
+            "commits": 3,
+            "added": 249,
+            "deleted": 27
+          },
+          {
+            "date": "2026-09-20",
+            "commits": 2,
+            "added": 200,
+            "deleted": 40
+          },
+          {
+            "date": "2026-09-21",
+            "commits": 3,
+            "added": 351,
+            "deleted": 93
+          },
+          {
+            "date": "2026-09-22",
+            "commits": 2,
+            "added": 268,
+            "deleted": 84
+          },
+          {
+            "date": "2026-09-23",
+            "commits": 1,
+            "added": 151,
+            "deleted": 11
+          },
+          {
+            "date": "2026-09-24",
+            "commits": 7,
+            "added": 301,
+            "deleted": 154
+          },
+          {
+            "date": "2026-09-25",
+            "commits": 1,
+            "added": 60,
+            "deleted": 33
+          },
+          {
+            "date": "2026-09-26",
+            "commits": 1,
+            "added": 77,
+            "deleted": 44
+          },
+          {
+            "date": "2026-09-27",
+            "commits": 2,
+            "added": 188,
+            "deleted": 26
+          },
+          {
+            "date": "2026-09-28",
+            "commits": 5,
+            "added": 555,
+            "deleted": 120
+          },
+          {
+            "date": "2026-09-29",
+            "commits": 6,
+            "added": 768,
+            "deleted": 210
+          },
+          {
+            "date": "2026-09-30",
+            "commits": 6,
+            "added": 870,
+            "deleted": 276
+          },
+          {
+            "date": "2026-10-01",
+            "commits": 5,
+            "added": 810,
+            "deleted": 75
+          },
+          {
+            "date": "2026-10-02",
+            "commits": 3,
+            "added": 162,
+            "deleted": 78
+          },
+          {
+            "date": "2026-10-03",
+            "commits": 1,
+            "added": 71,
+            "deleted": 37
+          },
+          {
+            "date": "2026-10-04",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-05",
+            "commits": 1,
+            "added": 105,
+            "deleted": 17
+          },
+          {
+            "date": "2026-10-06",
+            "commits": 1,
+            "added": 122,
+            "deleted": 28
+          },
+          {
+            "date": "2026-10-07",
+            "commits": 2,
+            "added": 278,
+            "deleted": 78
+          },
+          {
+            "date": "2026-10-08",
+            "commits": 4,
+            "added": 624,
+            "deleted": 32
+          },
+          {
+            "date": "2026-10-09",
+            "commits": 5,
+            "added": 240,
+            "deleted": 95
+          },
+          {
+            "date": "2026-10-10",
+            "commits": 3,
+            "added": 195,
+            "deleted": 90
+          },
+          {
+            "date": "2026-10-11",
+            "commits": 3,
+            "added": 246,
+            "deleted": 123
+          },
+          {
+            "date": "2026-10-12",
+            "commits": 5,
+            "added": 495,
+            "deleted": 50
+          },
+          {
+            "date": "2026-10-13",
+            "commits": 3,
+            "added": 348,
+            "deleted": 63
+          },
+          {
+            "date": "2026-10-14",
+            "commits": 2,
+            "added": 266,
+            "deleted": 64
+          },
+          {
+            "date": "2026-10-15",
+            "commits": 1,
+            "added": 150,
+            "deleted": 43
+          },
+          {
+            "date": "2026-10-16",
+            "commits": 7,
+            "added": 294,
+            "deleted": 84
+          },
+          {
+            "date": "2026-10-17",
+            "commits": 0,
+            "added": 0,
+            "deleted": 0
+          },
+          {
+            "date": "2026-10-18",
+            "commits": 1,
+            "added": 76,
+            "deleted": 34
+          },
+          {
+            "date": "2026-10-19",
+            "commits": 4,
+            "added": 372,
+            "deleted": 180
+          },
+          {
+            "date": "2026-10-20",
+            "commits": 5,
+            "added": 550,
+            "deleted": 70
+          },
+          {
+            "date": "2026-10-21",
+            "commits": 6,
+            "added": 762,
+            "deleted": 150
+          },
+          {
+            "date": "2026-10-22",
+            "commits": 6,
+            "added": 864,
+            "deleted": 216
+          },
+          {
+            "date": "2026-10-23",
+            "commits": 5,
+            "added": 805,
+            "deleted": 25
+          },
+          {
+            "date": "2026-10-24",
+            "commits": 1,
+            "added": 53,
+            "deleted": 16
+          },
+          {
+            "date": "2026-10-25",
+            "commits": 1,
+            "added": 70,
+            "deleted": 27
+          },
+          {
+            "date": "2026-10-26",
+            "commits": 1,
+            "added": 87,
+            "deleted": 38
+          },
+          {
+            "date": "2026-10-27",
+            "commits": 1,
+            "added": 104,
+            "deleted": 7
+          },
+          {
+            "date": "2026-10-28",
+            "commits": 1,
+            "added": 121,
+            "deleted": 18
+          },
+          {
+            "date": "2026-10-29",
+            "commits": 8,
+            "added": 1104,
+            "deleted": 232
+          },
+          {
+            "date": "2026-10-30",
+            "commits": 4,
+            "added": 620,
+            "deleted": 160
+          },
+          {
+            "date": "2026-10-31",
+            "commits": 2,
+            "added": 94,
+            "deleted": 18
+          },
+          {
+            "date": "2026-11-01",
+            "commits": 3,
+            "added": 192,
+            "deleted": 60
+          },
+          {
+            "date": "2026-11-02",
+            "commits": 6,
+            "added": 486,
+            "deleted": 186
+          },
+          {
+            "date": "2026-11-03",
+            "commits": 5,
+            "added": 490,
+            "deleted": 210
+          },
+          {
+            "date": "2026-11-04",
+            "commits": 3,
+            "added": 345,
+            "deleted": 33
+          },
+          {
+            "date": "2026-11-05",
+            "commits": 2,
+            "added": 264,
+            "deleted": 44
+          }
+        ],
+        "weekly": [
+          {
+            "date": "2026-08-24",
+            "commits": 8,
+            "added": 740,
+            "deleted": 196
+          },
+          {
+            "date": "2026-08-31",
+            "commits": 17,
+            "added": 1769,
+            "deleted": 458
+          },
+          {
+            "date": "2026-09-07",
+            "commits": 21,
+            "added": 2003,
+            "deleted": 583
+          },
+          {
+            "date": "2026-09-14",
+            "commits": 23,
+            "added": 2121,
+            "deleted": 576
+          },
+          {
+            "date": "2026-09-21",
+            "commits": 17,
+            "added": 1396,
+            "deleted": 445
+          },
+          {
+            "date": "2026-09-28",
+            "commits": 26,
+            "added": 3236,
+            "deleted": 796
+          },
+          {
+            "date": "2026-10-05",
+            "commits": 19,
+            "added": 1810,
+            "deleted": 463
+          },
+          {
+            "date": "2026-10-12",
+            "commits": 19,
+            "added": 1629,
+            "deleted": 338
+          },
+          {
+            "date": "2026-10-19",
+            "commits": 28,
+            "added": 3476,
+            "deleted": 684
+          },
+          {
+            "date": "2026-10-26",
+            "commits": 20,
+            "added": 2322,
+            "deleted": 533
+          },
+          {
+            "date": "2026-11-02",
+            "commits": 16,
+            "added": 1585,
+            "deleted": 473
+          }
+        ],
+        "recent": [
+          {
+            "sha": "24142cee24ff26ff1e670adb35b448a900c0c8a1",
+            "timestamp": "2026-11-05T15:05:00+00:00",
+            "subject": "Synthetic example commit \u2014 demonstration only",
+            "added": 114,
+            "deleted": 17,
+            "binary_changes": 0
+          }
+        ],
+        "collected_at": "2026-11-05T18:30:00+00:00",
+        "cached": false
+      },
+      "worktrees": [
+        {
+          "path": "/demo/shared-library",
+          "branch": "main",
+          "head": "24142cee24ff26ff1e670adb35b448a900c0c8a1",
+          "status": "ok",
+          "staged": 0,
+          "unstaged": 0,
+          "untracked": 0,
+          "conflicts": 0,
+          "dirty": false,
+          "files": [],
+          "loc": {
+            "staged": {
+              "added": 0,
+              "deleted": 0,
+              "binary_files": 0
+            },
+            "unstaged": {
+              "added": 0,
+              "deleted": 0,
+              "binary_files": 0
+            },
+            "net": {
+              "added": 0,
+              "deleted": 0,
+              "binary_files": 0
+            }
+          },
+          "errors": [],
+          "fingerprint": "synthetic",
+          "first_seen_dirty_at": null,
+          "last_changed_at": "2026-11-05T16:05:00+00:00",
+          "observation_gap_seconds": null
+        }
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "sha": "24142cee24ff26ff1e670adb35b448a900c0c8a1",
+          "committed_at": "2026-11-05T15:05:00+00:00",
+          "age_days": 0,
+          "upstream": "origin/main",
+          "upstream_state": "cached",
+          "ahead": 0,
+          "behind": 0,
+          "merged_into_ref": true
+        }
+      ],
+      "remote_branches": [],
+      "stashes": [],
+      "source_status": {
+        "history": "ok",
+        "worktrees": "ok",
+        "branches": "ok",
+        "stashes": "ok"
+      }
+    }
+  ],
+  "errors": [],
+  "collection_running": false,
+  "source": "Synthetic demonstration data; no user repository observations",
+  "duration_seconds": 0
+}

@@ -1,130 +1,200 @@
-# Work Visibility
+<div align="center">
 
-An independent, local-first work observer. Git observations work without Wale,
-AgentFlow, a task system, or GitHub credentials. Wale is an optional future adapter.
+# 🚀 Work Visibility
 
-This first slice provides a local snapshot command and persistent observation
-history. The supplied GitHub collector and static reports are preserved under
-`starter/` and remain available through the same entry point. There is no new
-dashboard, background service, or automatic repository discovery.
+### Your work is bigger than the current branch.
 
-## Run
+**See the momentum. Find the loose ends. Keep your Git story in view.**
 
-Requires Python 3.11+ and Git 2.36+. No third-party packages or installation.
-Local validation used WSL/Linux and Git 2.43.0; Windows execution is not qualified.
+Python 3.11+ · Git 2.37+ · No third-party packages · Local-first
 
-From this directory:
+[Quick start](#quick-start) · [Features](#what-you-get) · [Multiple repositories](#bring-your-repositories-together) · [Releases](https://github.com/TOTALLYMAJOR/work-visibility/releases)
 
-```bash
-python3 -B work_visibility.py snapshot --root /absolute/path/to/a/clone
-python3 -B work_visibility.py history --limit 20
-```
+</div>
 
-Repeat `--root` for independent clones. A clone's registered linked worktrees are
-enumerated automatically. Subdirectories are accepted by Git, but a parent folder
-containing many repositories is not recursively scanned. Only configure repositories
-you want observed. Reports and the database contain private paths and branch names.
+![Work Visibility live dashboard showing Git activity and pending work across SportPilot and Wale](docs/images/dashboard-live.png)
 
-The default SQLite database is
-`$XDG_STATE_HOME/work-visibility/observations.sqlite3`, falling back to
-`~/.local/state/work-visibility/observations.sqlite3`. Override with `--database` on
-both commands. Database writes inside any observed worktree or common Git directory
-are rejected. Snapshot JSON goes to stdout; if redirecting it, keep your output
-outside monitored repositories too. The observer cannot control shell redirection.
+*Actual local dashboard for SportPilot and Wale. This is a dated capture of selected local refs and working states; remote comparisons use cached information.*
 
-Exit status: `0` for complete local inventory in the declared scope; `2` for partial
-coverage (JSON is still delivered and observations persist); `1` for failure to
-initialize or persist. A `complete` local inventory does **not** imply remote,
-task, LOC, submodule-content, deployment, or acceptance coverage.
+---
 
-Existing starter commands:
+Code moves fast. Context gets scattered: a change in another worktree, a branch
+waiting to be pushed, a stash you meant to revisit. **Work Visibility brings
+committed history and current local work into one dashboard.**
 
-```bash
-python3 -B work_visibility.py collect --help
-python3 -B work_visibility.py report --help
-python3 -B work_visibility.py demo --output-dir /tmp/work-visibility-demo
-```
+Point it at your repositories, open your browser, and see what has changed and
+what still needs a closer look. No GitHub account, API token, cloud service,
+Node installation, or frontend build step is needed to run the dashboard.
 
-`collect` makes GitHub requests only when explicitly invoked. `demo` writes clearly
-synthetic data. The supplied Wale manifest is a historical example, not an enabled
-monitoring configuration. Consult `starter/README.md` for those command options.
+## What you get
 
-## What snapshots observe
+| See the momentum | Find the loose ends |
+| --- | --- |
+| Daily commit activity across selected refs | Staged, unstaged, untracked, and conflicted paths |
+| Weekly lines added and deleted | Dirty worktrees, including registered linked worktrees |
+| Repository and product filters | Local branches ahead of their cached upstream |
+| Selectable history windows | Stashes and branches to review |
+| Self-contained HTML and JSON exports | Source warnings, collection limits, and observation gaps |
 
-- Per configured clone: canonical common Git directory, all local branch refs and
-  heads, upstream/cached push tracking ref when available, shared stash identities.
-- Per registered worktree: path, current HEAD and branch, detached/unborn status,
-  staged/unstaged/untracked/conflicted paths, registration flags, and coverage.
-- Independent clones remain distinct; linked worktrees share clone observations.
-- Each worktree and shared-ref observation has its own collection time. The scan
-  has a start, finish, and measured elapsed duration.
-- SQLite retains first seen, last seen, last state change, last successful
-  observation, last known successful state, and deduplicated transition history.
-  Unchanged polls update freshness without adding transition events.
+**Built for your whole workspace.** Use it with personal projects, a product made
+of several repositories, or work produced by different editors and agent tools.
+Wale and AgentFlow are optional context, not runtime dependencies.
 
-Identity is path-bound within this monitor database: a persisted installation UUID
-and canonical common directory identify a clone; the clone and worktree path
-identify a worktree. Moving a clone or replacing the database creates new identities.
-Renames, cross-machine aggregation, and replacement-at-the-same-path detection are
-not implemented. A gap recovery updates the original configured-root entity.
+## Quick start
 
-Files are never ingested: only path/status metadata and stat fingerprints are
-stored. Fingerprints help detect concurrent changes; they are not content digests
-or proof that nothing changed between scans. A metadata-only file touch can also
-produce a transition. No inactivity or abandonment rule is implemented. A long
-interval without observations establishes neither inactivity nor absence of a run.
-
-## Read-only observation boundary
-
-The observer issues no fetch, prune, checkout, index update, configuration write,
-commit, remote query, or native task operation. Monitor state belongs outside the
-repositories. It removes inherited Git override variables, disables optional locks,
-filesystem monitoring, hooks, untracked-cache use and automatic maintenance, and
-blocks transport protocols. Diagnostics, timeouts and output-budget failures become
-coverage gaps; raw Git stderr and configured command values are not persisted.
-
-Git older than 2.36 is rejected: older versions can interpret `core.fsmonitor=false`
-as a hook pathname. Any configured clean/process filter makes worktree status
-unavailable rather than executing it. Partial-clone configuration similarly blocks
-content-sensitive observation. Shared refs can still be observed. These are
-conservative limitations, not evidence that those repositories are clean.
-
-Each command has a 10-second timeout and 8 MiB combined-output budget. Large scans
-can still take several commands per worktree; no portfolio-wide latency guarantee
-is claimed. Status, HEAD/index and changed-path fingerprints are checked twice,
-with one bounded retry for inconsistency. This is not an atomic snapshot or a
-security boundary against an adversary concurrently replacing repository files,
-configuration, executables or monitor storage.
-
-Submodule paths are identified but their content is not scanned; such worktrees
-are partial. Bare repositories expose shared refs with an explicit no-worktree
-state. Inaccessible and prunable registrations remain visible. Symlinked path
-components and OS permissions follow the host's filesystem behavior.
-
-## Still to build
-
-Fresh publication/ancestry comparisons, full PR head/base and merge binding, task
-and journal adapters, LOC with named baselines, portfolio memberships, attention
-policies, an updating UI, and background operation. All local publication states
-remain `unknown`; a clean worktree does not hide its local branch observations.
-The starter receipt is a supplied JSON format, not a native authority record.
-
-## Validate
+Have **Python 3.11+** and **Git 2.37+** on your PATH, then clone or download this
+repository. Repository access is required while it remains private.
 
 ```bash
-python3 -B -m unittest discover -s tests -v
-python3 -B -m unittest discover -s starter -p test_wale_visibility.py -q
+git clone https://github.com/TOTALLYMAJOR/work-visibility.git
+cd work-visibility
+python3 git_dashboard.py serve --repo /absolute/path/to/your/project
 ```
 
-Tests use disposable Git repositories and offline API fakes; they do not scan
-your projects. See [verification](docs/VERIFICATION.md) and
-[design scope](docs/DESIGN.md). Original package integrity can be checked with
-`sha256sum -c CHECKSUMS.sha256` from `starter/`.
+Open **[http://127.0.0.1:8765](http://127.0.0.1:8765)**.
 
-## Provenance
+That's the setup. Local observations refresh every **30 seconds** by default while
+the process is running and your machine is awake. Stop it with **Ctrl+C**.
 
-The supplied `wale-product-visibility.zip` was imported unchanged under `starter/`.
-Archive SHA-256: `e0df749c07486a290abadc7427c312c540cbd3b1bd7f3ee277bc81eb9c5c7d4a`.
-Its dated reports and verification claims remain historical, not current checks.
-No license grant has been invented for the supplied material; determine distribution
-terms before external publication.
+Want to look around first? Open the included [`demo.html`](demo.html) locally in
+your browser. It is a static, clearly labeled synthetic example.
+
+## Bring your repositories together
+
+Pass `--repo` more than once:
+
+```bash
+python3 git_dashboard.py serve \
+  --repo ~/projects/frontend \
+  --repo ~/projects/api \
+  --repo ~/projects/shared-library
+```
+
+For named products, labels, and explicit comparison refs, create a `config.json`:
+
+```json
+{
+  "title": "My development workspace",
+  "timezone": "America/Chicago",
+  "days": 180,
+  "refresh_seconds": 30,
+  "repositories": [
+    {"name": "Frontend", "product": "My product", "path": "../frontend", "ref": "main"},
+    {"name": "API", "product": "My product", "path": "../api", "ref": "main"},
+    {"name": "Weekend project", "product": "Personal", "path": "../weekend-project", "ref": "HEAD"}
+  ]
+}
+```
+
+```bash
+python3 git_dashboard.py serve --config config.json
+```
+
+Relative paths resolve from the config file's directory. Change paths and refs to
+match your checkouts. [`config.example.json`](config.example.json) shows additional
+settings; review its example paths before use.
+
+Registered worktrees sharing a Git common directory are counted once at the
+repository level. Their working states remain visible separately. Independent
+clones remain separate observations and can duplicate history totals if both
+are configured.
+
+## Make the view yours
+
+```bash
+# History reachable from local main, over the last 90 days.
+python3 git_dashboard.py serve --repo ~/projects/my-app --ref main --days 90
+
+# Another port and a shorter local refresh interval.
+python3 git_dashboard.py serve --repo ~/projects/my-app --port 8766 --interval 10
+
+# Use a locally cached remote-tracking ref. No fetch is performed.
+python3 git_dashboard.py serve --repo ~/projects/my-app --ref origin/main
+```
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `days` | `180` | History collection window |
+| `refresh_seconds` | `30` | Delay between collection cycles; minimum 5 seconds |
+| `history_refresh_seconds` | `300` | Cache unchanged history between collections |
+| `max_commits` | `20000` | Bound history collection; truncation stays visible |
+| `stale_days` | `14` | Highlight old branch tips for review |
+| `timezone` | `America/Chicago` | Chart calendar buckets; UTC fallback if unavailable |
+| `exclude_globs` | `[]` | Exclude matching paths from line metrics; pending files remain visible |
+
+Refresh intervals are configuration targets, not scan-time guarantees. Large
+repositories can take longer; failures remain visible in coverage details.
+
+## Take the picture with you
+
+Create a standalone HTML report and a machine-readable snapshot:
+
+```bash
+python3 git_dashboard.py scan \
+  --repo ~/projects/my-app \
+  --output activity.html \
+  --json activity.json
+```
+
+The HTML contains its data and charts and opens offline. It is a dated snapshot;
+use `serve` for automatic updates. The dashboard also has an **Export JSON** button.
+
+## Clear numbers. Clear boundaries.
+
+- **History:** non-merge commits reachable from the selected ref, bucketed by
+  committer date. This is not an all-branches action ledger.
+- **Additions/deletions:** changed text lines, not total source LOC, productivity,
+  correctness, or task completion. Binary changes are separate.
+- **Current tracked work:** HEAD to working tree. Staged and unstaged deltas are
+  separate comparisons; adding them can double-count or cancel changes. Untracked
+  paths are listed without adding their contents to tracked line counts.
+- **Ahead/behind:** locally cached upstream information. Missing upstreams remain
+  unknown publication status. This version does not query GitHub PRs.
+- **Not merged:** Git ancestry against the selected ref. Squash/rebase merges and
+  reused branches require additional interpretation.
+- **Old work:** a review hint. An old tip, dirty file, or offline interval does not
+  prove abandonment. Dirty observation ages begin when this tool sees them.
+- **Partial evidence:** missing objects, shallow history, commit limits,
+  inaccessible worktrees, and unstable observations stay visible.
+
+## Local by design
+
+The HTTP server binds to **127.0.0.1**. The observer does not stage, commit, push,
+merge, fetch, prune, reset, or delete repository work. Git observations disable
+optional locks and executable filesystem-monitor callbacks. Configured content
+filters can make working measurements unavailable rather than execute them.
+
+The dashboard does not retain file contents or patches. Paths, branch names,
+commit metadata, and exports can still contain private project information.
+
+Observation timing is saved to `~/.git-activity-dashboard/observations.json` by
+default. Override with `--state /path/outside/your/checkouts/observations.json`.
+Keep state and report outputs outside monitored repositories. No background service
+is installed; refresh stops when the process stops.
+
+## Windows and WSL
+
+Run the observer where the repositories live. For WSL repositories, use Python
+and Git inside WSL. For a Windows checkout, from PowerShell:
+
+```powershell
+py -3 git_dashboard.py serve --repo "C:\Users\you\projects\my-app"
+```
+
+Local validation was performed on WSL/Linux. Native Windows execution has not
+been qualified in this workspace.
+
+## Run the checks
+
+```bash
+python3 -B -m unittest -v test_git_metrics.py test_dashboard.py
+```
+
+Tests use disposable repositories and offline fixtures, without your credentials
+or project repositories. See [`VERIFICATION.md`](VERIFICATION.md) for recorded
+evidence and limitations. [`CHECKSUMS.sha256`](CHECKSUMS.sha256) records package-file
+integrity checks.
+
+---
+
+**Less hunting through branches. More understanding of where your work stands.**

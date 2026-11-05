@@ -1,0 +1,30 @@
+{
+  "title": "My Git activity",
+  "timezone": "America/Chicago",
+  "days": 180,
+  "refresh_seconds": 30,
+  "history_refresh_seconds": 300,
+  "max_commits": 20000,
+  "stale_days": 14,
+  "exclude_globs": [],
+  "repositories": [
+    {
+      "name": "Wale",
+      "product": "Wale",
+      "path": "/home/administrator/projects_new/design-intelligence",
+      "ref": "main"
+    },
+    {
+      "name": "AgentFlow",
+      "product": "Wale",
+      "path": "/replace/with/your/AgentFlow/checkout",
+      "ref": "main"
+    },
+    {
+      "name": "SportPilot",
+      "product": "SportPilot",
+      "path": "/home/administrator/SportPilot",
+      "ref": "main"
+    }
+  ]
+}
