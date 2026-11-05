@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.codebase-memory/
+*.sqlite3
+*.sqlite3-*
+.local-state/

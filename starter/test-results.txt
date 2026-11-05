@@ -1,0 +1,48 @@
+test_future_execution_time_prevents_passing (test_wale_visibility.CITests.test_future_execution_time_prevents_passing) ... ok
+test_latest_attempt_failure_overrides_prior_success (test_wale_visibility.CITests.test_latest_attempt_failure_overrides_prior_success) ... ok
+test_missing_selected_workflow_and_ambiguous_name_unknown (test_wale_visibility.CITests.test_missing_selected_workflow_and_ambiguous_name_unknown) ... ok
+test_named_workflow_passes_only_at_exact_sha (test_wale_visibility.CITests.test_named_workflow_passes_only_at_exact_sha) ... ok
+test_neutral_skipped_cancelled_are_not_passing (test_wale_visibility.CITests.test_neutral_skipped_cancelled_are_not_passing) ... ok
+test_newer_run_pending_overrides_old_success (test_wale_visibility.CITests.test_newer_run_pending_overrides_old_success) ... ok
+test_old_execution_with_fresh_sha_observation_is_allowed (test_wale_visibility.CITests.test_old_execution_with_fresh_sha_observation_is_allowed) ... ok
+test_partial_and_stale_observations_never_green (test_wale_visibility.CITests.test_partial_and_stale_observations_never_green) ... ok
+test_unrelated_success_cannot_hide_selected_failure (test_wale_visibility.CITests.test_unrelated_success_cannot_hide_selected_failure) ... ok
+test_unselected_workflows_unknown (test_wale_visibility.CITests.test_unselected_workflows_unknown) ... ok
+test_wrong_event_success_does_not_hide_push_failure (test_wale_visibility.CITests.test_wrong_event_success_does_not_hide_push_failure) ... ok
+test_zero_workflows_unknown (test_wale_visibility.CITests.test_zero_workflows_unknown) ... ok
+test_actions_1000_limit_stays_incomplete (test_wale_visibility.CollectionTests.test_actions_1000_limit_stays_incomplete) ... ok
+test_collect_resolves_sha_and_uses_sha_filter (test_wale_visibility.CollectionTests.test_collect_resolves_sha_and_uses_sha_filter) ... ok
+test_fixed_origin_and_no_redirect (test_wale_visibility.CollectionTests.test_fixed_origin_and_no_redirect) ... ok
+test_missing_link_full_page_checks_next_page (test_wale_visibility.CollectionTests.test_missing_link_full_page_checks_next_page) ... ok
+test_network_and_http_errors_redact_tokens_and_bodies (test_wale_visibility.CollectionTests.test_network_and_http_errors_redact_tokens_and_bodies) ... ok
+test_pagination_follows_bounded_pages_and_flags_cap (test_wale_visibility.CollectionTests.test_pagination_follows_bounded_pages_and_flags_cap) ... ok
+test_partial_pages_preserve_observations_on_failure (test_wale_visibility.CollectionTests.test_partial_pages_preserve_observations_on_failure) ... ok
+test_source_failure_remains_unknown_and_report_not_zero_total (test_wale_visibility.CollectionTests.test_source_failure_remains_unknown_and_report_not_zero_total) ... ok
+test_dangling_edges_capabilities_and_invalid_types (test_wale_visibility.ManifestTests.test_dangling_edges_capabilities_and_invalid_types) ... ok
+test_duplicate_component_id_rejected (test_wale_visibility.ManifestTests.test_duplicate_component_id_rejected) ... ok
+test_duplicate_repository_slug_rejected_case_insensitively (test_wale_visibility.ManifestTests.test_duplicate_repository_slug_rejected_case_insensitively) ... ok
+test_enum_types_and_workflow_event_validation_are_clean_errors (test_wale_visibility.ManifestTests.test_enum_types_and_workflow_event_validation_are_clean_errors) ... ok
+test_manifest_digest_binds_criteria (test_wale_visibility.ManifestTests.test_manifest_digest_binds_criteria) ... ok
+test_urls_credentials_and_path_traversal_rejected (test_wale_visibility.ManifestTests.test_urls_credentials_and_path_traversal_rejected) ... ok
+test_contradictory_source_state_cannot_match (test_wale_visibility.ReceiptTests.test_contradictory_source_state_cannot_match) ... ok
+test_exact_component_set_required (test_wale_visibility.ReceiptTests.test_exact_component_set_required) ... ok
+test_expired_future_invalid_and_old_receipts (test_wale_visibility.ReceiptTests.test_expired_future_invalid_and_old_receipts) ... ok
+test_manifest_or_sha_mismatch (test_wale_visibility.ReceiptTests.test_manifest_or_sha_mismatch) ... ok
+test_matching_receipt_is_explicitly_unverified (test_wale_visibility.ReceiptTests.test_matching_receipt_is_explicitly_unverified) ... ok
+test_missing_capability_and_unsafe_url_fail (test_wale_visibility.ReceiptTests.test_missing_capability_and_unsafe_url_fail) ... ok
+test_missing_receipt_unknown (test_wale_visibility.ReceiptTests.test_missing_receipt_unknown) ... ok
+test_required_component_unknown_blocks_receipt (test_wale_visibility.ReceiptTests.test_required_component_unknown_blocks_receipt) ... ok
+test_unused_optional_component_does_not_block_core_receipt (test_wale_visibility.ReceiptTests.test_unused_optional_component_does_not_block_core_receipt) ... ok
+test_wrong_repo_id_and_failed_receipt_fail (test_wale_visibility.ReceiptTests.test_wrong_repo_id_and_failed_receipt_fail) ... ok
+test_collect_partial_exits_two_but_retains_snapshot (test_wale_visibility.ReportAndCLITests.test_collect_partial_exits_two_but_retains_snapshot) ... ok
+test_demo_generates_real_files_and_explicit_synthetic_banner (test_wale_visibility.ReportAndCLITests.test_demo_generates_real_files_and_explicit_synthetic_banner) ... ok
+test_html_text_is_escaped_and_dangerous_links_removed (test_wale_visibility.ReportAndCLITests.test_html_text_is_escaped_and_dangerous_links_removed) ... ok
+test_json_duplicate_keys_rejected (test_wale_visibility.ReportAndCLITests.test_json_duplicate_keys_rejected) ... ok
+test_snapshot_cannot_be_relabelled_after_manifest_edit (test_wale_visibility.ReportAndCLITests.test_snapshot_cannot_be_relabelled_after_manifest_edit) ... ok
+test_snapshot_enum_type_and_contradictory_pr_state (test_wale_visibility.ReportAndCLITests.test_snapshot_enum_type_and_contradictory_pr_state) ... ok
+test_snapshot_rejects_malformed_sources (test_wale_visibility.ReportAndCLITests.test_snapshot_rejects_malformed_sources) ... ok
+
+----------------------------------------------------------------------
+Ran 43 tests in 0.029s
+
+OK

@@ -1,0 +1,473 @@
+{
+  "schema_version": 1,
+  "mode": "live",
+  "collector": "GitHub connector GET observations; normalized with the Python collector",
+  "product_id": "wale",
+  "manifest_sha256": "aa7e185ef9dd0772b55bf6bbb217bddeb403ef8b556e2702667afdf9fd20f0a0",
+  "observed_at": "2026-11-04T22:25:33.786Z",
+  "components": [
+    {
+      "id": "wale",
+      "repository": "TOTALLYMAJOR/Wale",
+      "repository_id": 1341131707,
+      "ref": "main",
+      "sha": "a1294d62b4fb126531a2a131bcb209f4f8689067",
+      "sources": {
+        "repository": {
+          "state": "ok",
+          "complete": true,
+          "observed_at": "2026-11-04T22:25:33.910Z",
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Wale"
+        },
+        "commit": {
+          "state": "ok",
+          "complete": true,
+          "observed_at": "2026-11-04T22:33:48.283Z",
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Wale/commits/main",
+          "notes": "SHA rechecked before final report. Commit response reduced to SHA, URL, message, and committer timestamp; raw diff omitted."
+        },
+        "pull_requests": {
+          "state": "ok",
+          "complete": true,
+          "truncated": false,
+          "observed_at": "2026-11-04T22:25:33.786Z",
+          "pages": 1,
+          "items": [],
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Wale/pulls?state=open&per_page=100&page=1"
+        },
+        "workflows": {
+          "state": "ok",
+          "complete": true,
+          "truncated": false,
+          "observed_at": "2026-11-04T22:25:33.954Z",
+          "pages": 1,
+          "items": [
+            {
+              "id": 41921457862,
+              "workflow_id": 338912069,
+              "name": "Graph Update: pip in /. #1681647464",
+              "path": "dynamic/dependabot/update-graph",
+              "event": "dynamic",
+              "head_sha": "a1294d62b4fb126531a2a131bcb209f4f8689067",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 13,
+              "created_at": "2026-11-04T22:01:19Z",
+              "updated_at": "2026-11-04T22:02:11Z",
+              "run_started_at": "2026-11-04T22:01:19Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/Wale/actions/runs/41921457862"
+            },
+            {
+              "id": 39741088818,
+              "workflow_id": 339254367,
+              "name": "Design Intelligence CI",
+              "path": ".github/workflows/design-ci.yml",
+              "event": "push",
+              "head_sha": "a1294d62b4fb126531a2a131bcb209f4f8689067",
+              "status": "completed",
+              "conclusion": "failure",
+              "run_attempt": 1,
+              "run_number": 90,
+              "created_at": "2026-10-22T07:31:32Z",
+              "updated_at": "2026-10-22T07:57:33Z",
+              "run_started_at": "2026-10-22T07:31:32Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/Wale/actions/runs/39741088818"
+            }
+          ],
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Wale/actions/runs?head_sha=a1294d62b4fb126531a2a131bcb209f4f8689067&per_page=100&page=1"
+        }
+      },
+      "default_branch": "main"
+    },
+    {
+      "id": "agentflow",
+      "repository": "TOTALLYMAJOR/AgentFlow",
+      "repository_id": 1311365063,
+      "ref": "main",
+      "sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+      "sources": {
+        "repository": {
+          "state": "ok",
+          "complete": true,
+          "observed_at": "2026-11-04T22:25:33.833Z",
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/AgentFlow"
+        },
+        "commit": {
+          "state": "ok",
+          "complete": true,
+          "observed_at": "2026-11-04T22:33:48.136Z",
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/AgentFlow/commits/main",
+          "notes": "SHA rechecked before final report. Commit response reduced to SHA, URL, message, and committer timestamp; raw diff omitted."
+        },
+        "pull_requests": {
+          "state": "ok",
+          "complete": true,
+          "truncated": false,
+          "observed_at": "2026-11-04T22:25:34.009Z",
+          "pages": 1,
+          "items": [
+            {
+              "number": 11,
+              "title": "Qualify guided AgentFlow workflows and native WALE evidence",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/pull/11",
+              "draft": true,
+              "updated_at": "2026-11-04T21:07:30Z"
+            },
+            {
+              "number": 10,
+              "title": "build(deps-dev): bump vite from 8.1.5 to 8.3.5 in the npm_and_yarn group across 1 directory",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/pull/10",
+              "draft": false,
+              "updated_at": "2026-10-23T03:11:26Z"
+            }
+          ],
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/AgentFlow/pulls?state=open&per_page=100&page=1"
+        },
+        "workflows": {
+          "state": "ok",
+          "complete": true,
+          "truncated": false,
+          "observed_at": "2026-11-04T22:25:34.275Z",
+          "pages": 1,
+          "items": [
+            {
+              "id": 41698871070,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite, zod, zod - Update #1678466908",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 47,
+              "created_at": "2026-11-03T18:58:33Z",
+              "updated_at": "2026-11-03T18:59:14Z",
+              "run_started_at": "2026-11-03T18:58:33Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/41698871070"
+            },
+            {
+              "id": 41698871063,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite, zod, zod - Update #1678466907",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 46,
+              "created_at": "2026-11-03T18:58:33Z",
+              "updated_at": "2026-11-03T18:59:38Z",
+              "run_started_at": "2026-11-03T18:58:33Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/41698871063"
+            },
+            {
+              "id": 41262840052,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1669052770",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 45,
+              "created_at": "2026-11-01T01:52:07Z",
+              "updated_at": "2026-11-01T01:52:40Z",
+              "run_started_at": "2026-11-01T01:52:07Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/41262840052"
+            },
+            {
+              "id": 41102664292,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fast-uri, fast-uri, fast-uri, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1666228227",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 44,
+              "created_at": "2026-10-30T17:57:06Z",
+              "updated_at": "2026-10-30T18:03:32Z",
+              "run_started_at": "2026-10-30T17:57:06Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/41102664292"
+            },
+            {
+              "id": 40815014815,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fast-uri, fast-uri, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1662200980",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 43,
+              "created_at": "2026-10-29T03:57:23Z",
+              "updated_at": "2026-10-29T03:58:15Z",
+              "run_started_at": "2026-10-29T03:57:23Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40815014815"
+            },
+            {
+              "id": 40812462355,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1662161944",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 42,
+              "created_at": "2026-10-29T03:29:53Z",
+              "updated_at": "2026-10-29T03:30:48Z",
+              "run_started_at": "2026-10-29T03:29:53Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40812462355"
+            },
+            {
+              "id": 40811070040,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fast-uri, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1662144362",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 41,
+              "created_at": "2026-10-29T03:15:05Z",
+              "updated_at": "2026-10-29T03:15:53Z",
+              "run_started_at": "2026-10-29T03:15:05Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40811070040"
+            },
+            {
+              "id": 40811013219,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1662143566",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 40,
+              "created_at": "2026-10-29T03:14:29Z",
+              "updated_at": "2026-10-29T03:15:19Z",
+              "run_started_at": "2026-10-29T03:14:29Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40811013219"
+            },
+            {
+              "id": 40522027219,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, fastify, fastify, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1658215802",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 39,
+              "created_at": "2026-10-27T14:32:08Z",
+              "updated_at": "2026-10-27T14:32:57Z",
+              "run_started_at": "2026-10-27T14:32:08Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40522027219"
+            },
+            {
+              "id": 40522026422,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, vite, vite, vite, vite, vite, vite, vite, vite, vite, vite - Update #1658215753",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 38,
+              "created_at": "2026-10-27T14:32:08Z",
+              "updated_at": "2026-10-27T14:33:02Z",
+              "run_started_at": "2026-10-27T14:32:08Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40522026422"
+            },
+            {
+              "id": 40261772916,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, vite, vite, vite, vite, vite, vite, vite, vite - Update #1652748514",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 37,
+              "created_at": "2026-10-26T02:58:59Z",
+              "updated_at": "2026-10-26T02:59:50Z",
+              "run_started_at": "2026-10-26T02:58:59Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40261772916"
+            },
+            {
+              "id": 40261745525,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, @vitest/mocker, vite, vite, vite, vite, vite, vite - Update #1652747898",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 36,
+              "created_at": "2026-10-26T02:58:37Z",
+              "updated_at": "2026-10-26T02:59:31Z",
+              "run_started_at": "2026-10-26T02:58:37Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40261745525"
+            },
+            {
+              "id": 40163373933,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, vite, vite, vite, vite, vite, vite - Update #1651015669",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 35,
+              "created_at": "2026-10-25T04:50:55Z",
+              "updated_at": "2026-10-25T04:51:41Z",
+              "run_started_at": "2026-10-25T04:50:55Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40163373933"
+            },
+            {
+              "id": 40162480177,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for @vitest/mocker, vite, vite, vite, vite, vite, vite - Update #1651003362",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 34,
+              "created_at": "2026-10-25T04:36:07Z",
+              "updated_at": "2026-10-25T04:36:56Z",
+              "run_started_at": "2026-10-25T04:36:07Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/40162480177"
+            },
+            {
+              "id": 39897788966,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for vite, vite, vite, vite - Update #1646824684",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 33,
+              "created_at": "2026-10-23T03:58:02Z",
+              "updated_at": "2026-10-23T03:58:52Z",
+              "run_started_at": "2026-10-23T03:58:02Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/39897788966"
+            },
+            {
+              "id": 39893535996,
+              "workflow_id": 327420051,
+              "name": "npm_and_yarn in /. for vite, vite, vite - Update #1646749802",
+              "path": "dynamic/dependabot/dependabot-updates",
+              "event": "dynamic",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 32,
+              "created_at": "2026-10-23T03:10:00Z",
+              "updated_at": "2026-10-23T03:11:25Z",
+              "run_started_at": "2026-10-23T03:10:00Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/39893535996"
+            },
+            {
+              "id": 39885356675,
+              "workflow_id": 386101756,
+              "name": "AgentFlow CI",
+              "path": ".github/workflows/verify.yml",
+              "event": "push",
+              "head_sha": "c5d25181a3e4f7665f38753cf374264bcc2cd69b",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 18,
+              "created_at": "2026-10-23T01:40:46Z",
+              "updated_at": "2026-10-23T01:42:07Z",
+              "run_started_at": "2026-10-23T01:40:46Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/AgentFlow/actions/runs/39885356675"
+            }
+          ],
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/AgentFlow/actions/runs?head_sha=c5d25181a3e4f7665f38753cf374264bcc2cd69b&per_page=100&page=1"
+        }
+      },
+      "default_branch": "main"
+    },
+    {
+      "id": "traffic-control",
+      "repository": "TOTALLYMAJOR/Traffic-Control-Pilot",
+      "repository_id": 1373835237,
+      "ref": "main",
+      "sha": "53488c86be74ae23f74fdedadcd97d8f15467d23",
+      "sources": {
+        "repository": {
+          "state": "ok",
+          "complete": true,
+          "observed_at": "2026-11-04T22:25:33.879Z",
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Traffic-Control-Pilot"
+        },
+        "commit": {
+          "state": "ok",
+          "complete": true,
+          "observed_at": "2026-11-04T22:33:48.166Z",
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Traffic-Control-Pilot/commits/main",
+          "notes": "SHA rechecked before final report. Commit response reduced to SHA, URL, message, and committer timestamp; raw diff omitted."
+        },
+        "pull_requests": {
+          "state": "ok",
+          "complete": true,
+          "truncated": false,
+          "observed_at": "2026-11-04T22:25:33.832Z",
+          "pages": 1,
+          "items": [],
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Traffic-Control-Pilot/pulls?state=open&per_page=100&page=1"
+        },
+        "workflows": {
+          "state": "ok",
+          "complete": true,
+          "truncated": false,
+          "observed_at": "2026-11-04T22:25:33.900Z",
+          "pages": 1,
+          "items": [
+            {
+              "id": 39156041160,
+              "workflow_id": 386101757,
+              "name": "Traffic Control CI",
+              "path": ".github/workflows/test.yml",
+              "event": "push",
+              "head_sha": "53488c86be74ae23f74fdedadcd97d8f15467d23",
+              "status": "completed",
+              "conclusion": "success",
+              "run_attempt": 1,
+              "run_number": 6,
+              "created_at": "2026-10-18T18:50:55Z",
+              "updated_at": "2026-10-18T18:51:05Z",
+              "run_started_at": "2026-10-18T18:50:55Z",
+              "html_url": "https://github.com/TOTALLYMAJOR/Traffic-Control-Pilot/actions/runs/39156041160"
+            }
+          ],
+          "source_url": "https://api.github.com/repos/TOTALLYMAJOR/Traffic-Control-Pilot/actions/runs?head_sha=53488c86be74ae23f74fdedadcd97d8f15467d23&per_page=100&page=1"
+        }
+      },
+      "default_branch": "main"
+    }
+  ],
+  "collection_finished_at": "2026-11-04T22:33:48.286Z",
+  "source_provenance": "github-observation-provenance.json"
+}

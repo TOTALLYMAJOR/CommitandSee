@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "product_id": "demo-product",
+  "manifest_sha256": "f9da9b51a29e21e3c6e92cba087c2a299f8d6871364aed84f5b3f6911a2eaed7",
+  "component_shas": {
+    "web": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "api": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "component_repository_ids": {
+    "web": 100,
+    "api": 200
+  },
+  "checked_at": "2026-11-04T22:28:31Z",
+  "expires_at": "2026-11-04T23:33:31Z",
+  "result": "pass",
+  "evidence_url": "https://example.invalid/synthetic-receipt",
+  "environment": "integration",
+  "capabilities": [
+    "journey"
+  ]
+}
