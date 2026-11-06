@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased — portable app, repository controls, and reliability
+## v0.2.0-rc.1 — portable app, repository controls, and reliability
 
 CommitandSee brings Git history, branches, worktrees, and unfinished local work
 into one local dashboard. This update adds persistent repository removal and
@@ -60,8 +60,9 @@ the launch command.
 ### Verification and limits
 
 See [VERIFICATION.md](VERIFICATION.md) for exact commands, runtimes, outcomes,
-and fixture boundaries. This entry describes the working release candidate;
-it does not claim a tag, published release, or deployment exists.
+and fixture boundaries. Download assets and publication status are listed in
+the [v0.2.0-rc.1 prerelease](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.2.0-rc.1).
+This candidate is not a production-acceptance claim.
 
 Anonymous public GitHub history remains bounded and may be partial. Private
 GitHub sign-in, authoritative PR/CI status, and automatic background-service
