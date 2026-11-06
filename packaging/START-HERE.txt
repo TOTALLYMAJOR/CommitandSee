@@ -1,0 +1,43 @@
+CommitandSee for Windows
+
+1. Extract the entire ZIP to a folder you own.
+2. Open CommitandSee.exe. Keep its console window open while using the dashboard.
+3. Your default browser opens the local dashboard. Choose Add repository to start.
+4. Press Ctrl+C in the console to stop. Closing only the browser does not stop it.
+
+Requires Windows 10/11 x64 and Git for Windows 2.37 or newer.
+Python is included. Git is not included: https://git-scm.com/download/win
+This unsigned local build has not established Windows SmartScreen reputation.
+
+The dashboard listens on 127.0.0.1, using an available port. It does not install a
+service, change your startup applications, or update itself. If the browser does
+not open, copy the Dashboard URL printed in the console into your browser.
+
+Your files are stored outside this extracted folder:
+  %LOCALAPPDATA%\CommitandSee\config.json
+  %LOCALAPPDATA%\CommitandSee\config.json.registry.sqlite3
+  %LOCALAPPDATA%\CommitandSee\observations.json
+  %LOCALAPPDATA%\CommitandSee\public-repositories\
+
+The SQLite registry stores repositories added or removed in the dashboard. Stop
+all observer instances, then keep it with config.json when backing up or moving
+settings. Removing a repository
+from the dashboard does not delete its working files or retained cache/history.
+The portable launcher does not migrate settings from the Python source CLI.
+
+Stop the app before replacing this extracted folder. Extract each new ZIP into a
+fresh folder, keeping all files together; your saved settings remain in AppData.
+Do not copy only the EXE: it needs the accompanying _internal directory.
+
+Command-line overrides:
+  CommitandSee.exe --no-browser
+  CommitandSee.exe --config C:\settings\config.json --state C:\settings\observations.json
+  CommitandSee.exe --port 8765
+
+Keep configuration and state outside the application folder and monitored Git
+repositories. Configuration, SQLite registry, and observation state need separate
+file paths. The source CLI (git_dashboard.py) remains a separate supported entry.
+
+See LICENSE.txt, THIRD-PARTY-NOTICES.txt, licenses/, and BUILD-INFO.json for the
+distribution's license notices and exact build inputs. Network access is needed
+only when adding/refreshing public GitHub repositories; local Git works offline.

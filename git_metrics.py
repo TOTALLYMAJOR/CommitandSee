@@ -13,11 +13,15 @@ import hashlib
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import tempfile
 import threading
 from typing import Iterable
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+if os.name == "nt":
+    from windows_job import WindowsJob
 
 
 UTC = dt.timezone.utc
@@ -59,27 +63,61 @@ def _environment() -> dict[str, str]:
 def _run(command: list[str], *, input_data: bytes | None = None,
          limit: int = MAX_OUTPUT, timeout: float = COMMAND_TIMEOUT,
          environment: dict[str, str] | None = None) -> tuple[int, bytes, bytes]:
-    """Bound stdout/stderr while draining both pipes, without a shell."""
+    """Bound output and cancel Git with its transport helpers, without a shell."""
     chunks: list[list[bytes]] = [[], []]
     overflow = threading.Event()
     stdin_file = tempfile.TemporaryFile() if input_data is not None else None
     if stdin_file is not None:
         stdin_file.write(input_data)
         stdin_file.seek(0)
+    # Git can spawn remote helpers which outlive a killed Git parent and retain
+    # its output pipes. Give ordinary descendants one cancellation boundary.
+    process_options = {"start_new_session": True} if os.name == "posix" else {}
+    job = None
     try:
-        process = subprocess.Popen(command, stdin=stdin_file or subprocess.DEVNULL,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   env=_environment() if environment is None else environment)
+        if os.name == "nt":
+            job = WindowsJob()
+        start = job.start if job is not None else subprocess.Popen
+        process = start(command, stdin=stdin_file or subprocess.DEVNULL,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                        env=_environment() if environment is None else environment,
+                        **process_options)
     except (OSError, ValueError) as exc:
+        if job is not None:
+            job.close()
         if stdin_file is not None:
             stdin_file.close()
         raise GitError(f"Cannot run Git: {exc}") from exc
+
+    cancellation_lock = threading.Lock()
+    cancelled = False
+
+    def cancel_tree() -> None:
+        nonlocal cancelled
+        with cancellation_lock:
+            if cancelled:
+                return
+            cancelled = True
+            if os.name == "posix":
+                try:
+                    # Do this even if the group leader exited: its helpers may
+                    # still be alive with inherited stdout/stderr handles.
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            elif job is not None:
+                job.terminate()
+                return  # TerminateJobObject already includes the parent.
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
 
     def drain(pipe, index: int, budget: int) -> None:
         total = 0
         try:
             while True:
-                piece = pipe.read(65536)
+                piece = pipe.read1(65536)
                 if not piece:
                     break
                 remaining = budget - total
@@ -88,24 +126,23 @@ def _run(command: list[str], *, input_data: bytes | None = None,
                 total += len(piece)
                 if total > budget:
                     overflow.set()
-                    try:
-                        process.kill()
-                    except OSError:
-                        pass
+                    cancel_tree()
                     break
         finally:
             pipe.close()
 
-    readers = [threading.Thread(target=drain, args=(process.stdout, 0, limit), daemon=True),
-               threading.Thread(target=drain, args=(process.stderr, 1, 256 * 1024), daemon=True)]
-    for reader in readers:
-        reader.start()
+    readers = []
+    owned_pipes = set()
     try:
+        for pipe, index, budget in ((process.stdout, 0, limit), (process.stderr, 1, 256 * 1024)):
+            reader = threading.Thread(target=drain, args=(pipe, index, budget), daemon=True)
+            reader.start()
+            readers.append(reader)
+            owned_pipes.add(pipe)
         try:
             code = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired as exc:
-            process.kill()
-            process.wait()
+            cancel_tree()
             raise GitError(f"Git command exceeded {timeout:g} seconds") from exc
         # A process can exit before its readers drain the final pipe buffers.
         # Join before inspecting overflow or constructing the returned bytes.
@@ -117,10 +154,25 @@ def _run(command: list[str], *, input_data: bytes | None = None,
             raise GitError("Git output exceeded the collection budget")
         return code, b"".join(chunks[0]), b"".join(chunks[1])
     finally:
-        for reader in readers:
-            reader.join(timeout=2)
-        if stdin_file is not None:
-            stdin_file.close()
+        try:
+            if process.poll() is None or any(reader.is_alive() for reader in readers):
+                cancel_tree()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired as exc:
+                raise GitError("Git process could not be terminated") from exc
+            for reader in readers:
+                reader.join(timeout=2)
+        finally:
+            if job is not None:
+                job.close()
+                process.close()
+            # A failed Thread.start leaves its pipe without a reader owner.
+            for pipe in (process.stdout, process.stderr):
+                if pipe not in owned_pipes and not pipe.closed:
+                    pipe.close()
+            if stdin_file is not None:
+                stdin_file.close()
 
 
 @functools.lru_cache(maxsize=1)
