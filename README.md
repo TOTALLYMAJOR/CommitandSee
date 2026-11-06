@@ -1,64 +1,91 @@
 <div align="center">
 
-# 🚀 Work Visibility
+# CommitandSee
 
-### Your work is bigger than the current branch.
+### See the work GitHub can't see.
 
-**See the momentum. Find the loose ends. Keep your Git story in view.**
+**A local-first Git dashboard that reveals unfinished work across repositories, branches, worktrees, and stashes.**
 
-Python 3.11+ · Git 2.37+ · No third-party packages · Local-first
+Python 3.11+ · Git 2.37+ · No third-party Python packages · Local-first · Read-only observation
 
-[Quick start](#quick-start) · [Features](#what-you-get) · [Multiple repositories](#bring-your-repositories-together) · [Releases](https://github.com/TOTALLYMAJOR/work-visibility/releases)
+[Try it in 3 commands](#quick-start) · [See the dashboard](#the-dashboard) · [What it catches](#what-commitandsee-finds) · [GitHub comparison](#why-not-just-github) · [Full documentation](#add-a-repository-from-the-dashboard)
 
 </div>
 
-![Work Visibility live dashboard showing the glass dashboard and live portfolio collection](docs/images/dashboard-live.png)
+![CommitandSee dashboard: local portfolio view while collecting repository evidence](docs/images/dashboard-live.png)
 
-*Actual local portfolio capture during collection. Pending sources and partial totals remain visible; remote comparisons use cached information.*
+*Real local dashboard capture. Pending sources and partial totals stay visible; remote comparisons use cached information.*
 
----
+## The problem
 
-Code moves fast. Context gets scattered: a change in another worktree, a branch
-waiting to be pushed, a stash you meant to revisit. **Work Visibility brings
-committed history and current local work into one dashboard.**
+You made progress today. But where is it?
 
-Point it at your repositories, open your browser, and see what has changed and
-what still needs a closer look. No GitHub account, API token, Node installation, or frontend build step is
-needed. Public GitHub repositories require an Internet connection; local
-checkout observation works offline.
+Maybe the code is **uncommitted in another worktree**, **committed but not pushed**, **sitting on an unmerged branch**, or **hidden in a stash**. GitHub shows what was published; it cannot directly inspect your local checkout. A product spanning multiple repositories makes that blind spot worse.
 
-## What you get
+**CommitandSee puts local working state and committed history in one view**, so you can see what's moving and what deserves review. It does not change your repositories.
 
-| See the momentum | Find the loose ends |
-| --- | --- |
-| Daily commit activity across selected refs | Staged, unstaged, untracked, and conflicted paths |
-| Weekly lines added and deleted | Dirty worktrees, including registered linked worktrees |
-| Repository and product filters | Local branches ahead of their cached upstream |
-| Selectable history windows | Stashes and branches to review |
-| Self-contained HTML and JSON exports | Source warnings, collection limits, and observation gaps |
+## The dashboard
 
-**Built for your whole workspace.** Use it with personal projects, a product made
-of several repositories, or work produced by different editors and agent tools.
-Wale and AgentFlow are optional context, not runtime dependencies.
+- **Momentum:** daily commits, weekly additions/deletions, filters by product and repository, selectable history windows.
+- **Loose ends:** staged, unstaged, untracked, and conflicted paths; linked worktrees; local branches ahead of cached upstreams; stashes; ancestry-based unmerged candidates.
+- **Evidence, not guesswork:** observation timestamps, missing data, shallow/truncated history, and source errors remain visible.
+- **Multiple repositories:** group separate Git repositories into one product-level view.
+
+![Add repository dialog for local checkouts and public GitHub repositories](docs/images/add-repository.png)
+
+*Screenshot of the repository-add flow on a narrow viewport.*
 
 ## Quick start
 
-Have **Python 3.11+** and **Git 2.37+** on your PATH, then clone or download this
-repository. Repository access is required while it remains private.
+Install **Python 3.11+** and **Git 2.37+**. Then run:
 
 ```bash
-git clone https://github.com/TOTALLYMAJOR/work-visibility.git
-cd work-visibility
+git clone https://github.com/TOTALLYMAJOR/CommitandSee.git
+cd CommitandSee
 python3 git_dashboard.py serve --repo /absolute/path/to/your/project
 ```
 
-Open **[http://127.0.0.1:8765](http://127.0.0.1:8765)**.
+Open **http://127.0.0.1:8765** in your browser. Local observations refresh every 30 seconds by default while the server is running. Stop with **Ctrl+C**.
 
-That's the setup. Local observations refresh every **30 seconds** by default while
-the process is running and your machine is awake. Stop it with **Ctrl+C**.
+**Want to see the interface without configuring Git?** Open [demo.html](demo.html) from the repository. It is a static, synthetic sample—not live repository data.
 
-Want to look around first? Open the included [`demo.html`](demo.html) locally in
-your browser. It is a static, clearly labeled synthetic example.
+**Need multiple projects?** Repeat `--repo` for each local checkout, or use [config.example.json](config.example.json) to group repositories by product. The dashboard can also add public GitHub repository URLs when launched with an external configuration file; public-source history is downloaded into a separate bare cache, not into your worktrees.
+
+## What CommitandSee finds
+
+| Question | Evidence surfaced |
+| --- | --- |
+| What did I work on? | Commit history, changed-line trends, and repository/product breakdowns |
+| What work isn't committed? | Staged, unstaged, untracked, and conflicted working-tree paths |
+| What did I leave elsewhere? | Linked worktree state, stashes, and reviewable branches |
+| What might not be published? | Branches ahead of **locally cached** upstream refs |
+| What might not be merged? | Git ancestry relative to the selected ref (not GitHub PR status) |
+| How trustworthy is the view? | Partial collection, stale comparisons, missing refs, and observation warnings |
+
+## Why not just GitHub?
+
+| GitHub | CommitandSee |
+| --- | --- |
+| Strong source of truth for pushed commits, pull requests, reviews, checks, and releases | Local-first visibility into *uncommitted* files, unpublished branches, worktrees, and stashes |
+| Repository-centered collaboration and hosting | One dashboard for several local repositories that collectively make up a product |
+| Cannot directly see the state of your local working directories | Observes local Git state without staging, committing, pushing, or merging |
+| Current hosted PR/CI information | Git history and cached upstream comparisons; **does not claim live PR/CI status** |
+
+**Complement GitHub, don't replace it.** For collaboration, checks, and authoritative remote state, use GitHub. For the work that hasn't reached GitHub, use CommitandSee.
+
+## What it deliberately does not do
+
+It does **not** push code, merge branches, stage files, run arbitrary project code, report live PR/CI status, or equate line counts with productivity. Cached upstreams may be stale; absent upstreams are unknown, not proof that code was never pushed. Public repository sources cannot expose someone else's local working state. See [verification and limitations](VERIFICATION.md).
+
+## Who it's for
+
+Solo developers, maintainers, AI-assisted builders, and small teams coordinating products that span multiple Git repositories. If you've ever asked “what did I change, and where did I leave it?”, this is for you.
+
+**If CommitandSee solves a problem you recognize, [star the repository](https://github.com/TOTALLYMAJOR/CommitandSee) to help other developers discover it.** For bugs or concrete improvements, [open an issue](https://github.com/TOTALLYMAJOR/CommitandSee/issues). Stars are appreciated, not required to use the tool.
+
+---
+
+## Detailed usage
 
 ## Add a repository from the dashboard
 
