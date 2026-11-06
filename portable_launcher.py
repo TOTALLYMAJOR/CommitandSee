@@ -107,11 +107,12 @@ def wait_until_ready(url, timeout=10):
 
 def serve(config, config_path, state_path, *, port=0, open_browser=True, stop_event=None):
     state = app.LiveState(app.DashboardCollector(config, state_path), config_path)
-    server = ThreadingHTTPServer(("127.0.0.1", port), app.make_handler(state))
-    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.2},
-                              name="portable-http", daemon=True)
+    server = thread = None
     started = worker_started = False
     try:
+        server = ThreadingHTTPServer(("127.0.0.1", port), app.make_handler(state))
+        thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.2},
+                                  name="portable-http", daemon=True)
         thread.start()
         started = True
         url = f"http://127.0.0.1:{server.server_address[1]}"
@@ -136,13 +137,21 @@ def serve(config, config_path, state_path, *, port=0, open_browser=True, stop_ev
     finally:
         state.stop.set()
         state.wake.set()
-        if started:
-            server.shutdown()
-        server.server_close()
-        if started:
-            thread.join(timeout=2)
-        if worker_started:
-            state.worker.join(timeout=2)
+        try:
+            if started:
+                server.shutdown()
+        finally:
+            try:
+                # Cancel device polling and forget session credentials even
+                # when port binding/readiness failed before collection began.
+                state.auth.close()
+            finally:
+                if server is not None:
+                    server.server_close()
+                if started:
+                    thread.join(timeout=2)
+                if worker_started:
+                    state.worker.join(timeout=2)
         # In the Windows bundle, process exit closes the runtime's kill-on-close
         # Job Objects, including any Git command still running after this wait.
 

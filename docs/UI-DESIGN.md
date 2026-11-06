@@ -109,3 +109,81 @@ repository setup. The console remains visible for errors and Ctrl+C shutdown.
 This is a startup/distribution addition within the existing app direction; no
 new app skin, installed service, or automatic updater is introduced. Native
 executable validation is recorded separately in VERIFICATION.md.
+
+## GitHub repository picker — owner selections November 5, 2026
+
+OWNER INTENT: connect a GitHub account, search the repositories it can access,
+select repositories, then add only that selection. The owner selected the
+searchable picker first and built-in read-only GitHub App device authorization
+second. This later authorization opens GitHub sign-in and private-history import;
+it supersedes the earlier removal-only exclusion for this feature. It does not
+change the selected glass skin, native controls, CSS/SVG/WebGL technology,
+existing charts, local-checkout flow, or manual public-URL flow.
+
+AGENT INFERENCE: a **Connect GitHub** control opens a **GitHub repositories**
+dialog. **Sign in with GitHub** displays a code and a link to GitHub; credentials
+are entered on GitHub, not in the dashboard. After authorization, a searchable
+checkbox list and **Add selected** action allow deliberate source selection.
+Signing in and discovering repositories do not automatically register or fetch
+all of them. AGENT ADDITION: none.
+
+| State | User-visible behavior and relationship |
+| --- | --- |
+| Publisher setup absent or invalid | Explain the missing configuration and link the setup guide; ordinary users use the bundled registration, and local/public repository controls remain usable |
+| Signed out | Offer sign-in and explain that credentials last for the app session |
+| Device authorization pending | Show the code and GitHub link with pending feedback and cancellation; keep the dialog usable by keyboard |
+| Expired or declined authorization | Explain the result and offer a fresh sign-in |
+| Signed in, loading repositories | Show a genuine loading state without invented repository results |
+| No accessible repositories | Explain app installation, repository selection, and possible organization approval; offer **Configure repository access on GitHub** and **Refresh list** |
+| Repositories available | Search by repository name, select explicit rows, and add only the selected sources; preserve failed additions for correction |
+| Added | Persist non-secret source choices in the companion registry and show queued collection in the existing repository table |
+| Disconnected or app exited | Forget session credentials; keep saved choices and mark authenticated sources **Sign in required** rather than clean or zero |
+
+The GitHub App requests Contents and Metadata read access only, supports
+installation on any account, and uses device authorization without an embedded
+client secret or private key. User authorization and repository installation
+grants are separate. Organization approval is external and must not be presented
+as complete merely because the user is signed in. The owner supplied the official
+CommitandSee registration, which is bundled as public defaults; ordinary users
+do not enter Client IDs or register an app. Publisher overrides use
+`github_app.client_id` and `github_app.app_slug`, with environment overrides
+documented in [GITHUB-APP-SETUP.md](GITHUB-APP-SETUP.md).
+
+Access and refresh tokens are memory-only and forgotten on disconnect or process
+exit. Closing the browser tab does not end the process. Saved selections survive
+restart. Disconnect clears the app's collected authenticated results, but it
+does not delete downloaded private Git objects; removal also retains caches.
+Explicit cache deletion after stopping the app is a separate user action.
+Private source metadata and exports must not be treated as public sample data.
+
+Remote **GitHub repository** rows provide published default-branch history,
+including authorized private history. They cannot establish local changes,
+stashes, unpublished commits, PR state, or CI. Local sources remain necessary for
+local-work visibility. Keyboard focus, status announcements, narrow layouts,
+reduced motion, cancellation, expired authorization, empty access, access failure,
+and partial add results must remain usable within the existing direction.
+
+First local integration proof: an actual loopback HTTP flow using the auth core
+and a stub provider completed authorization, selected import, disconnect, and
+restart in 0.579 seconds. Credentials were absent from responses and saved files.
+This is local fixture evidence, not GitHub authorization. A separate public API
+read matched the owner-supplied CommitandSee registration, Client ID, slug, and
+read-only Contents/Metadata permissions with no subscribed events.
+
+First provider-backed proof: the owner completed GitHub device authorization in
+an isolated local source preview, selected one private repository through the
+picker, and observed its collected history. Safe HTTP counters confirmed a
+connected session, one authenticated repository, one private repository, history
+available for that repository, and zero collection errors. This record excludes
+the account identity, repository name/path, device code, and all tokens.
+
+The source Python suite ran 145 tests: 141 passed and four platform-specific
+checks skipped, in 27.224 seconds. The final browser suites passed 26 cases in
+each of Chromium, Firefox, and WebKit, including cross-tab session changes,
+failed status verification, keyboard controls, and a 500-repository picker at
+desktop and mobile sizes. All 27 scoped axe scans reported no tested violations.
+Native portable validation is recorded in VERIFICATION.md. Organization-policy
+variants, complete visual acceptance, and release acceptance are not established
+by the single live flow. The owner's acknowledgement resolved the reported
+private repository issue; it was not full release acceptance. The older
+v0.2.0-rc.1 binary does not contain this feature.

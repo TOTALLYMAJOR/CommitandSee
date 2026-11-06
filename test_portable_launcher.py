@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import runpy
 import tempfile
 import threading
 import unittest
@@ -30,6 +31,17 @@ class PortableLauncherTests(unittest.TestCase):
             path.write_text(saved)
             launcher.prepare_config(path)
             self.assertEqual(path.read_text(), saved)
+
+    def test_first_start_uses_bundled_publisher_defaults_without_saving_an_override(self):
+        defaults = json.loads((Path(__file__).parent / 'github_app_defaults.json').read_text())
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, dict(os.environ), clear=True):
+            os.environ.pop('COMMITANDSEE_GITHUB_CLIENT_ID', None)
+            os.environ.pop('COMMITANDSEE_GITHUB_APP_SLUG', None)
+            path = Path(folder) / 'config.json'
+            launcher.prepare_config(path)
+            self.assertNotIn('github_app', json.loads(path.read_text()))
+            config = launcher.app.read_config(argparse.Namespace(command='serve', config=str(path), repo=[], ref=None))
+            self.assertEqual(config['github_app'], defaults)
 
     def test_frozen_bundle_cannot_be_used_for_writable_settings(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -79,7 +91,8 @@ class PortableLauncherTests(unittest.TestCase):
                 patch.object(launcher, 'find_git', return_value='/fixture/git/cmd/git.exe'), \
                 patch.object(launcher.app, '_git_capabilities', return_value=('2.56.0', True)):
             self.assertEqual(launcher.ensure_git(), '2.56.0')
-            self.assertEqual(os.environ['PATH'].split(os.pathsep)[0], '/fixture/git/cmd')
+            self.assertEqual(os.environ['PATH'].split(os.pathsep)[0],
+                             str(Path('/fixture/git/cmd/git.exe').resolve().parent))
 
     def session(self, *, no_browser=False, ready_error=None):
         order = []
@@ -133,6 +146,45 @@ class PortableLauncherTests(unittest.TestCase):
         state.worker.join.assert_not_called()
         browser.assert_not_called()
 
+    def test_shutdown_cancels_auth_before_waiting_for_collection(self):
+        _, state, _ = self.session()
+        state.auth.close.assert_called_once_with()
+        calls = [str(call) for call in state.mock_calls]
+        self.assertLess(calls.index('call.auth.close()'), calls.index('call.worker.join(timeout=2)'))
+
+    def test_failed_readiness_also_closes_auth(self):
+        _, state, _ = self.session(ready_error=TimeoutError('Not ready'))
+        state.auth.close.assert_called_once_with()
+
+    def test_failed_port_binding_closes_auth_without_starting_collection(self):
+        state = MagicMock()
+        with patch.object(launcher.app, 'DashboardCollector'), \
+                patch.object(launcher.app, 'LiveState', return_value=state), \
+                patch.object(launcher, 'ThreadingHTTPServer', side_effect=OSError('Port unavailable')):
+            with self.assertRaisesRegex(OSError, 'Port unavailable'):
+                launcher.serve({}, Path('/settings/config.json'), Path('/settings/state.json'))
+        state.auth.close.assert_called_once_with()
+        state.worker.start.assert_not_called()
+
+    def test_auth_sources_and_setup_guide_are_part_of_the_build_capture(self):
+        build = runpy.run_path(str(Path(__file__).parent / 'packaging' / 'build_portable.py'))
+        auth_inputs = ('github_auth.py', 'authenticated_repositories.py',
+                       'github_app_defaults.json', 'docs/GITHUB-APP-SETUP.md')
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in set(build['INPUTS']) | set(auth_inputs):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('initial build source\n')
+            captured = build['source_hashes'](root)
+            for name in auth_inputs:
+                with self.subTest(source=name):
+                    path = root / name
+                    path.write_text('changed auth source\n')
+                    self.assertTrue(captured != build['source_hashes'](root),
+                                    'A changed auth dependency must invalidate the captured build')
+                    path.write_text('initial build source\n')
+
     def test_explicit_settings_and_state_paths_are_preserved(self):
         with tempfile.TemporaryDirectory() as folder:
             config = Path(folder) / 'custom.json'
@@ -141,7 +193,7 @@ class PortableLauncherTests(unittest.TestCase):
                     patch.object(launcher, 'serve') as serve, \
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(launcher.main(['--no-browser', '--config', str(config), '--state', str(state)]), 0)
-            self.assertEqual(serve.call_args.args[1:3], (config, state))
+            self.assertEqual(serve.call_args.args[1:3], (config.resolve(), state.resolve()))
             self.assertFalse(serve.call_args.kwargs['open_browser'])
 
 

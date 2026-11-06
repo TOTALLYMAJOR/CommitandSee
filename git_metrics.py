@@ -17,7 +17,8 @@ import signal
 import subprocess
 import tempfile
 import threading
-from typing import Iterable
+import time
+from typing import Callable, Iterable
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 if os.name == "nt":
@@ -62,8 +63,19 @@ def _environment() -> dict[str, str]:
 
 def _run(command: list[str], *, input_data: bytes | None = None,
          limit: int = MAX_OUTPUT, timeout: float = COMMAND_TIMEOUT,
-         environment: dict[str, str] | None = None) -> tuple[int, bytes, bytes]:
+         environment: dict[str, str] | None = None,
+         cancel_check: Callable[[], bool] | None = None) -> tuple[int, bytes, bytes]:
     """Bound output and cancel Git with its transport helpers, without a shell."""
+    def cancellation_requested():
+        if cancel_check is None:
+            return False
+        try:
+            return bool(cancel_check())
+        except Exception:
+            return True  # An unavailable authorization guard must fail closed.
+
+    if cancellation_requested():
+        raise GitError("Git command cancelled")
     chunks: list[list[bytes]] = [[], []]
     overflow = threading.Event()
     stdin_file = tempfile.TemporaryFile() if input_data is not None else None
@@ -140,14 +152,40 @@ def _run(command: list[str], *, input_data: bytes | None = None,
             readers.append(reader)
             owned_pipes.add(pipe)
         try:
-            code = process.wait(timeout=timeout)
+            if cancel_check is None:
+                code = process.wait(timeout=timeout)
+            else:
+                deadline = time.monotonic() + timeout
+                while True:
+                    if cancellation_requested():
+                        cancel_tree()
+                        raise GitError("Git command cancelled")
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, timeout)
+                    try:
+                        code = process.wait(timeout=min(.1, remaining))
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
         except subprocess.TimeoutExpired as exc:
             cancel_tree()
             raise GitError(f"Git command exceeded {timeout:g} seconds") from exc
         # A process can exit before its readers drain the final pipe buffers.
         # Join before inspecting overflow or constructing the returned bytes.
         for reader in readers:
-            reader.join(timeout=2)
+            if cancel_check is None:
+                reader.join(timeout=2)
+            else:
+                deadline = time.monotonic() + 2
+                while reader.is_alive() and time.monotonic() < deadline:
+                    if cancellation_requested():
+                        cancel_tree()
+                        raise GitError("Git command cancelled")
+                    reader.join(timeout=min(.1, max(0, deadline - time.monotonic())))
+        if cancellation_requested():
+            cancel_tree()
+            raise GitError("Git command cancelled")
         if any(reader.is_alive() for reader in readers):
             raise GitError("Git output could not be fully collected")
         if overflow.is_set():

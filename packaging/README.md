@@ -5,6 +5,32 @@ the ZIP and open `CommitandSee.exe`; they still need Git for Windows. The launch
 uses `%LOCALAPPDATA%\CommitandSee`, starts on an available loopback port, checks HTTP
 readiness, and then opens the default browser. It leaves the source CLI unchanged.
 
+The current recipe builds **0.3.0-rc.1**. The older 0.2.0-rc.1 ZIP and tag are
+separate artifacts without GitHub sign-in; updating this recipe does not replace
+them or publish a release. The GitHub integration uses only the standard library.
+Both auth modules and the locally served GitHub App setup guide are explicit,
+hashed build inputs.
+
+Normal users do not enter publisher settings. `github_app_defaults.json` carries
+CommitandSee's public GitHub App client ID and slug, is included beside the frozen
+auth module, and is covered by the build hashes. The shared backend loads it when
+configuration omits `github_app`. A publisher/fork can supply explicit
+`github_app.client_id` and `github_app.app_slug` configuration instead; an explicit
+empty object or blank fields disables the defaults. `COMMITANDSEE_GITHUB_CLIENT_ID`
+and `COMMITANDSEE_GITHUB_APP_SLUG` environment values override either source. The
+launcher does not copy environment values into saved configuration. If defaults
+are absent or configuration disables them, the app truthfully reports that GitHub
+connection is not configured; local and public-source workflows remain available.
+Never include a client secret, private key, access token, or user settings file in
+the build. The bundled identifiers are public, not credentials. Device-flow
+credentials remain in process memory; launcher shutdown cancels polling and closes
+the auth session. Packaging does not register a GitHub App or establish successful
+provider login.
+Signed-in history uses a separate `github-repositories` cache beside observation
+state, partitioned by account and repository identity. Disconnecting clears the
+session and app access, not those downloaded Git objects. These caches are private
+user data and are never build inputs.
+
 Build from native Windows PowerShell, using 64-bit Python 3.11 or newer:
 
 ```powershell

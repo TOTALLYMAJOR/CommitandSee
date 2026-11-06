@@ -41,8 +41,9 @@ working repository to reproduce a mutating Git operation.
 
 - A missing observation is unknown, not zero or clean.
 - Cached upstream refs do not establish current remote or PR status.
-- Local observation must preserve checkout and Git metadata. Public collection
-  may fetch only into the application's own cache.
+- Local observation must preserve checkout and Git metadata. Public and
+  authenticated GitHub collection may fetch only into the application's own
+  caches; credentials must never enter repository records, exports, or logs.
 - Repository removal stops monitoring; it must not erase files, history, or
   downloaded caches.
 - Keep subprocess time and output bounds, safe request handling, and config
@@ -53,9 +54,11 @@ working repository to reproduce a mutating Git operation.
 ## Validate and submit
 
 Run the Python suite above. For browser changes, run
-`node test_dashboard_browser.cjs` using an existing Playwright installation;
-the README describes optional environment settings. Tests use synthetic or
-disposable data. Record which engines actually ran and any skipped checks.
+`node --test --test-concurrency=1 test_dashboard_browser.cjs test_github_browser.cjs`
+using an existing Playwright installation; the README describes optional
+environment settings. Tests use synthetic or disposable data. Record which
+engines actually ran and any skipped checks. Provider fixtures do not prove a
+real GitHub account authorization or private-history download.
 
 If you change `dashboard.html`, regenerate the bundled example:
 

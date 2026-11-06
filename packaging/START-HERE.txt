@@ -18,12 +18,27 @@ Your files are stored outside this extracted folder:
   %LOCALAPPDATA%\CommitandSee\config.json.registry.sqlite3
   %LOCALAPPDATA%\CommitandSee\observations.json
   %LOCALAPPDATA%\CommitandSee\public-repositories\
+  %LOCALAPPDATA%\CommitandSee\github-repositories\
 
 The SQLite registry stores repositories added or removed in the dashboard. Stop
 all observer instances, then keep it with config.json when backing up or moving
 settings. Removing a repository
 from the dashboard does not delete its working files or retained cache/history.
 The portable launcher does not migrate settings from the Python source CLI.
+
+GitHub connection uses CommitandSee's bundled public GitHub App identity. Choose
+Connect GitHub in the dashboard and authorize access on GitHub, then choose from
+the repositories your account and installation permit. No publisher client ID or
+app slug needs to be entered by normal users. If custom configuration disables
+connection, use the setup information or continue with a local checkout or public
+GitHub URL. No client secret or personal access token belongs in this extracted
+application folder. Sign-in credentials
+are kept only for the running session; stopping the app cancels sign-in polling
+and clears that session. A package build does not establish a working GitHub login.
+Downloaded signed-in repository history is stored separately in github-repositories
+under account/repository-specific cache directories. Disconnecting clears session
+credentials and hides that history in the app; it does not delete the cached Git
+objects from disk. Treat that user-data directory as private project data.
 
 Stop the app before replacing this extracted folder. Extract each new ZIP into a
 fresh folder, keeping all files together; your saved settings remain in AppData.
@@ -40,4 +55,4 @@ file paths. The source CLI (git_dashboard.py) remains a separate supported entry
 
 See LICENSE.txt, THIRD-PARTY-NOTICES.txt, licenses/, and BUILD-INFO.json for the
 distribution's license notices and exact build inputs. Network access is needed
-only when adding/refreshing public GitHub repositories; local Git works offline.
+for GitHub sign-in, repository browsing, and remote history; local Git works offline.

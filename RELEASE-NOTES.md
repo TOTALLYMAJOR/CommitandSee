@@ -1,5 +1,39 @@
 # Release notes
 
+## v0.3.0-rc.1 — GitHub sign-in and selected repository imports
+
+- Connect the bundled CommitandSee GitHub App using a short browser authorization
+  code. The app requests read-only Contents and Metadata permissions. No client
+  secret, GitHub CLI installation, or hosted login server is required.
+- Search the repositories accessible to both the signed-in user and the app
+  installation, then add selected repositories. Public and authorized private
+  repositories are labeled separately. Organization access may require approval.
+- Keep tokens in memory for the running session, refresh expiring access, and
+  forget credentials on disconnect or exit. Saved repository selections remain.
+  Authenticated observations are cleared on disconnect; late responses and
+  account changes cannot restore an earlier session's observations.
+- Fetch published default-branch history into a separate, account-bound
+  `github-repositories` cache. Disconnecting or removing a repository does not
+  erase downloaded private objects. Remote history cannot establish local
+  changes, stashes, unpublished commits, PR status, or CI results.
+- Cancel an in-flight authenticated Git fetch when its account session changes,
+  retaining the existing subprocess lifetime and output limits.
+
+The Windows portable ZIP includes this feature and the public app registration.
+Extract the complete new ZIP into a separate folder, stop the previous app, and
+open the new `CommitandSee.exe`. Existing saved choices remain in the app data
+folder; sign in again after each app restart. The older `v0.2.0-rc.1` ZIP below
+does not include sign-in. See the
+[v0.3.0-rc.1 prerelease](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.3.0-rc.1)
+for the unsigned Windows x64 download, checksum, and build information, and
+[GitHub setup](docs/GITHUB-APP-SETUP.md) for installation consent, publisher
+overrides, session behavior, and cache handling. Validation and provider evidence
+are recorded separately in [VERIFICATION.md](VERIFICATION.md).
+
+The README now explains the product's concrete benefits, gives a three-step
+startup path, and compares GitKraken, GitButler, GitHub Insights, and lazygit
+without claiming they lack overlapping capabilities.
+
 ## v0.2.0-rc.1 — portable app, repository controls, and reliability
 
 CommitandSee brings Git history, branches, worktrees, and unfinished local work

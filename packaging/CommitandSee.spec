@@ -7,9 +7,11 @@ a = Analysis(
     [str(root / 'portable_launcher.py')],
     pathex=[str(root)],
     binaries=[],
-    datas=[(str(root / filename), '.') for filename in ('dashboard.html', 'demo.html', 'demo.json')]
+    datas=[(str(root / filename), '.') for filename in
+           ('dashboard.html', 'demo.html', 'demo.json', 'github_app_defaults.json')]
+          + [(str(root / 'docs' / 'GITHUB-APP-SETUP.md'), 'docs')]
           + collect_data_files('tzdata'),
-    hiddenimports=collect_submodules('tzdata'),
+    hiddenimports=['github_auth', 'authenticated_repositories'] + collect_submodules('tzdata'),
     hookspath=[], hooksconfig={}, runtime_hooks=[],
     excludes=['tkinter'], noarchive=False,
 )
