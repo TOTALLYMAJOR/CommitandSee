@@ -1,4 +1,5 @@
 """Local registry boundary and progressive startup regression tests."""
+import argparse
 import json
 from pathlib import Path
 import subprocess
@@ -52,10 +53,13 @@ class RepositoryUITests(unittest.TestCase):
 
     def test_add_persists_metadata_and_does_not_touch_git(self):
         before = {str(p.relative_to(self.repo)): p.read_bytes() for p in self.repo.rglob('*') if p.is_file()}
+        original = self.path.read_bytes()
         item = self.state.add_repository({'path': str(self.repo), 'name': '<My repo>', 'product': 'App'})
         saved = json.loads(self.path.read_text())
         self.assertEqual(saved['selection'], {'preserve': True})
-        self.assertEqual(saved['repositories'][0], item)
+        self.assertEqual(self.path.read_bytes(), original)
+        args = argparse.Namespace(command='serve', config=str(self.path), repo=[], ref=None)
+        self.assertEqual(app.read_config(args)['repositories'][0], item)
         self.assertEqual(self.state.read()['repositories'][0]['status'], 'pending')
         self.assertTrue(self.state.wake.is_set())
         after = {str(p.relative_to(self.repo)): p.read_bytes() for p in self.repo.rglob('*') if p.is_file()}
@@ -70,7 +74,7 @@ class RepositoryUITests(unittest.TestCase):
             self.state.add_repository({'path': str(self.repo)})
         self.assertEqual(raised.exception.code, 'config_changed')
         self.state.config_digest = self.path.read_bytes()
-        with patch.object(app, 'atomic_json', side_effect=OSError('disk full')):
+        with patch.object(self.state.registry, 'update', side_effect=OSError('disk full')):
             with self.assertRaises(OSError): self.state.add_repository({'path': str(self.repo)})
         self.assertEqual(self.config['repositories'], [])
 

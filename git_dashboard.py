@@ -15,9 +15,11 @@ import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from git_metrics import collect_repository, _Git, _git_capabilities
+from git_metrics import collect_repository, GitError, _Git, _git_capabilities
 from public_repositories import public_url, public_metadata, collect_public
+from repository_registry import RepositoryRegistry, validate_state_destination
 
 ROOT = Path(__file__).resolve().parent
 DEFAULTS = {
@@ -31,13 +33,71 @@ def utc_now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def history_day(zone_name, collected_at=None):
+    """Match the collector's calendar window, including its UTC fallback."""
+    try:
+        zone = timezone.utc if zone_name == "UTC" else ZoneInfo(zone_name)
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = timezone.utc
+    moment = datetime.fromisoformat(collected_at.replace("Z", "+00:00")) if collected_at else datetime.now(timezone.utc)
+    return moment.astimezone(zone).date().isoformat()
+
+
+def repository_path(item, base):
+    if item.get("url"):
+        return public_url(item["url"])
+    path = Path(item["path"]).expanduser()
+    return str((base / path if not path.is_absolute() else path).resolve())
+
+
+def merge_repositories(base_entries, overrides, base):
+    """Apply UI additions/removal tombstones without changing the base JSON."""
+    merged, seen = [], set()
+    for entry in base_entries:
+        key = repository_path(entry, base)
+        seen.add(key)
+        value = overrides.get(key, entry)
+        if value is not None:
+            merged.append(copy.deepcopy(value))
+    merged.extend(copy.deepcopy(entry) for key, entry in overrides.items() if key not in seen and entry is not None)
+    return merged
+
+
+def normalize_repositories(repos, base, config, ref=None):
+    configured = []
+    for entry in repos:
+        if isinstance(entry, dict) and "url" in entry:
+            item = dict(entry)
+            item["url"] = public_url(item["url"])
+            item.update(path=item["url"], source_kind="public", ref="HEAD")
+        else:
+            if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not entry["path"].strip():
+                raise ValueError("Each repository needs a nonempty path string.")
+            item = dict(entry)
+            item["path"] = repository_path(item, base)
+        item.setdefault("name", Path(item["path"]).name)
+        item.setdefault("product", "My repositories")
+        item.setdefault("ref", ref or "HEAD")
+        if ref:
+            item["ref"] = ref
+        if not all(isinstance(item.get(k), str) and item[k] for k in ("name", "product", "ref")):
+            raise ValueError("Repository name, product, and ref must be nonempty strings.")
+        excludes = item.get("exclude_globs", config["exclude_globs"])
+        if not isinstance(excludes, list) or not all(isinstance(x, str) for x in excludes):
+            raise ValueError("Repository exclude_globs must be a list of strings.")
+        item["exclude_globs"] = excludes
+        configured.append(item)
+    return configured
+
+
 def read_config(args):
     config = dict(DEFAULTS)
     repos = []
     base = Path.cwd()
     if args.config:
         source = Path(args.config).expanduser().resolve()
-        raw = json.loads(source.read_text(encoding="utf-8"))
+        config["_config_digest"] = source.read_bytes()
+        raw = json.loads(config["_config_digest"])
         if not isinstance(raw, dict):
             raise ValueError("Config must be a JSON object.")
         config.update({k: raw[k] for k in DEFAULTS if k in raw})
@@ -45,6 +105,8 @@ def read_config(args):
         if not isinstance(repos, list):
             raise ValueError("repositories must be an array.")
         base = source.parent
+        config["_base_repositories"] = copy.deepcopy(repos)
+        config["_registry_overrides"] = RepositoryRegistry(source).read()
     for arg, field in (("days", "days"), ("interval", "refresh_seconds"),
                        ("timezone", "timezone"), ("max_commits", "max_commits"),
                        ("stale_days", "stale_days")):
@@ -61,37 +123,19 @@ def read_config(args):
         raise ValueError("exclude_globs must be a list of strings.")
     if not isinstance(config["title"], str) or not isinstance(config["timezone"], str):
         raise ValueError("title and timezone must be strings.")
-    configured = []
-    for entry in repos:
-        if isinstance(entry, dict) and "url" in entry:
-            item = dict(entry)
-            item["url"] = public_url(item["url"])
-            item.update(path=item["url"], source_kind="public", ref="HEAD")
-            configured.append(item)
-            continue
-        if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not entry["path"].strip():
-            raise ValueError("Each repository needs a nonempty path string.")
-        item = dict(entry)
-        path = Path(item["path"]).expanduser()
-        item["path"] = str((base / path if not path.is_absolute() else path).resolve())
-        configured.append(item)
+    configured = normalize_repositories(repos, base, config, args.ref)
+    if args.config:
+        configured = normalize_repositories(merge_repositories(
+            configured, config["_registry_overrides"], base), base, config, args.ref)
+    config["_ref_override"] = args.ref
     for value in args.repo or []:
         configured.append({"path": str(Path(value).expanduser().resolve()), "product": "My repositories"})
+    # These sources return whenever the same command is restarted. Do not offer
+    # a persistent UI removal for them, even if the config also names that path.
+    config["_cli_paths"] = [str(Path(value).expanduser().resolve()) for value in args.repo or []]
     if not configured and getattr(args, "command", None) != "serve":
         raise ValueError("Add --repo /path/to/repository (repeat for more repos), or use --config config.json.")
-    for item in configured:
-        item.setdefault("name", Path(item["path"]).name)
-        item.setdefault("product", "My repositories")
-        item.setdefault("ref", args.ref or "HEAD")
-        if args.ref:
-            item["ref"] = args.ref
-        if not all(isinstance(item.get(k), str) and item[k] for k in ("name", "product", "ref")):
-            raise ValueError("Repository name, product, and ref must be nonempty strings.")
-        excludes = item.get("exclude_globs", config["exclude_globs"])
-        if not isinstance(excludes, list) or not all(isinstance(x, str) for x in excludes):
-            raise ValueError("Repository exclude_globs must be a list of strings.")
-        item["exclude_globs"] = excludes
-    config["repositories"] = configured
+    config["repositories"] = normalize_repositories(configured, base, config, args.ref)
     return config
 
 
@@ -188,13 +232,16 @@ class DashboardCollector:
                     if not local.get("url") and self.public_cache_root.resolve().is_relative_to(Path(local["path"]).resolve()):
                         raise ValueError("Public cache must be outside monitored repositories; use --state outside those paths.")
                 cached = self.public_cache.get(item["url"])
-                if cached and time.monotonic() - cached[0] < max(60, self.config["history_refresh_seconds"]):
+                if (cached and cached[2] == history_day(self.config["timezone"])
+                        and time.monotonic() - cached[0] < max(60, self.config["history_refresh_seconds"])):
                     repo = copy.deepcopy(cached[1])
                     if repo.get("history"):
                         repo["history"]["cached"] = True
                 else:
                     repo = collect_public(item, self.public_cache_root, self.config)
-                    self.public_cache[item["url"]] = (time.monotonic(), copy.deepcopy(repo))
+                    self.public_cache[item["url"]] = (
+                        time.monotonic(), copy.deepcopy(repo),
+                        history_day(self.config["timezone"], repo.get("collected_at")))
                 repo.update(product=item["product"], products=[item["product"]], configured_paths=[item["path"]])
                 result["repositories"].append(repo)
                 if on_progress and on_progress(result):
@@ -214,7 +261,7 @@ class DashboardCollector:
                     result["errors"].append(f"{item['name']}: same Git common directory as {kept['name']}; counted once. First configured ref retained.")
                     continue
                 key = (identity, repo.get("head"), item["ref"], self.config["days"], self.config["timezone"],
-                       tuple(item["exclude_globs"]), datetime.now(timezone.utc).date().isoformat())
+                       tuple(item["exclude_globs"]), history_day(self.config["timezone"]))
                 cached = self.history_cache.get(key)
                 if repo.get("common_dir"):
                     if cached and time.monotonic() - cached[0] < self.config["history_refresh_seconds"]:
@@ -232,7 +279,7 @@ class DashboardCollector:
                             history["collected_at"] = repo.get("collected_at", utc_now())
                             history["cached"] = False
                             actual_key = (identity, repo.get("head"), item["ref"], self.config["days"], self.config["timezone"],
-                                          tuple(item["exclude_globs"]), datetime.now(timezone.utc).date().isoformat())
+                                          tuple(item["exclude_globs"]), history_day(self.config["timezone"], repo.get("collected_at")))
                             self.history_cache = {k: v for k, v in self.history_cache.items() if k[0] != identity}
                             self.history_cache[actual_key] = (time.monotonic(), copy.deepcopy(history))
                 repo["configured_paths"] = [item["path"]]
@@ -285,11 +332,33 @@ class RepositoryError(ValueError):
         self.code, self.status = code, status
 
 
+def repository_locations(path):
+    """Identify the entire Git worktree family before writing monitor config."""
+    _, lazy = _git_capabilities()
+    git = _Git(Path(path).resolve(), lazy)
+    root = Path(os.fsdecode(git.run("rev-parse", "--show-toplevel")).strip()).resolve()
+    common = Path(os.fsdecode(git.run("rev-parse", "--path-format=absolute", "--git-common-dir")).strip()).resolve()
+    registered = {root}
+    for field in git.run("worktree", "list", "--porcelain", "-z").split(b"\0"):
+        if field.startswith(b"worktree "):
+            registered.add(Path(os.fsdecode(field[9:])).resolve())
+    return root, common, registered
+
+
 class LiveState:
     def __init__(self, collector, config_path=None):
         self.collector = collector
         self.config_path = Path(config_path).expanduser().resolve() if config_path else None
-        self.config_digest = self.config_path.read_bytes() if self.config_path and self.config_path.exists() else None
+        self.config_digest = collector.config.get("_config_digest",
+            self.config_path.read_bytes() if self.config_path and self.config_path.exists() else None)
+        raw = json.loads(self.config_digest) if self.config_digest else {}
+        self.base_entries = raw.get("repositories", [])
+        self.registry = RepositoryRegistry(self.config_path) if self.config_path else None
+        self.registry_overrides = self.registry.read() if self.registry else {}
+        self.persisted_paths = {item["path"] for item in self.effective_entries(self.registry_overrides, include_cli=False)}
+        if "_base_repositories" in collector.config:
+            collector.config["repositories"] = self.effective_entries(self.registry_overrides)
+        self.registry_revision = 0
         self.lock = threading.Lock()
         self.write_lock = threading.Lock()
         self.stop = threading.Event()
@@ -301,9 +370,16 @@ class LiveState:
         self.publish(self.snapshot)
         self.worker = threading.Thread(target=self.loop, name="git-observer", daemon=True)
 
-    def publish(self, data):
+    def publish(self, data, revision=None):
         with self.lock:
+            if revision is not None and revision != self.registry_revision:
+                return
             snapshot = copy.deepcopy(data)
+            active = {item["path"] for item in self.collector.config["repositories"]}
+            # A scan can finish after removal. Its captured rows must never
+            # restore a source that is no longer configured.
+            snapshot["repositories"] = [row for row in snapshot["repositories"]
+                if active.intersection(row.get("configured_paths", [row["path"]]))]
             paths = {p for r in snapshot["repositories"] for p in r.get("configured_paths", [r["path"]])}
             previous = {r["path"]: r for r in self.snapshot.get("repositories", []) if r.get("status") != "pending"}
             for item in self.collector.config["repositories"]:
@@ -314,12 +390,85 @@ class LiveState:
                     snapshot["repositories"].append({**item, "id": item["path"], "status": "pending",
                         "history": None, "worktrees": [], "branches": [], "stashes": [],
                         "source_status": {k: "pending" for k in ("history", "worktrees", "branches", "stashes")}})
+            for row in snapshot["repositories"]:
+                represented = set(row.get("configured_paths", [row["path"]]))
+                row["removable"] = bool(self.config_path and represented <= self.persisted_paths
+                    and not represented.intersection(self.collector.config.get("_cli_paths", [])))
             snapshot["repository_management"] = self.config_path is not None
             self.snapshot = snapshot
 
     def read(self):
         with self.lock:
             return copy.deepcopy(self.snapshot)
+
+    def entry_path(self, item):
+        """Normalize persisted relative paths without discarding entry metadata."""
+        return repository_path(item, self.config_path.parent)
+
+    def effective_entries(self, overrides, *, include_cli=True):
+        base = self.config_path.parent if self.config_path else Path.cwd()
+        config = self.collector.config
+        entries = merge_repositories(self.base_entries, overrides, base)
+        if include_cli:
+            entries.extend({"path": path, "product": "My repositories"} for path in config.get("_cli_paths", []))
+        return normalize_repositories(entries, base, config, config.get("_ref_override"))
+
+    def identities(self, entries=None):
+        result = {}
+        for item in self.collector.config["repositories"] if entries is None else entries:
+            if item.get("url"):
+                continue
+            try:
+                result[item["path"]] = repository_locations(item["path"])
+            except (GitError, OSError, ValueError):
+                # Unavailable sources must remain removable. Their configured
+                # paths and any previously observed locations are still checked.
+                pass
+        return result
+
+    def writable_config(self, identities=None, extra_locations=(), entries=None):
+        """Validate a config-adjacent registry write; never write the JSON."""
+        self.registry.validate_paths()
+        locations = set(extra_locations)
+        for item in self.collector.config["repositories"] if entries is None else entries:
+            if not item.get("url"):
+                locations.add(Path(item["path"]).resolve())
+        if identities is None:
+            identities = self.identities() if entries is None else self.identities(entries)
+        for root, common, registered in identities.values():
+            locations.update({root, common, *registered})
+        for row in self.read()["repositories"]:
+            if row.get("source_kind") == "public" or row.get("url"):
+                continue
+            if row.get("common_dir"):
+                locations.add(Path(row["common_dir"]).resolve())
+            locations.update(Path(tree["path"]).resolve() for tree in row.get("worktrees", []) if tree.get("path"))
+        if any(artifact.is_relative_to(path) for path in locations
+               for artifact in [self.config_path, *self.registry.artifacts]):
+            raise RepositoryError("unsafe_config", "Move dashboard configuration outside monitored repositories and their linked worktrees.", 409)
+        # Identity checks can take time. Read after them so an external edit
+        # during inspection cannot be replaced by the older configuration.
+        current = self.checked_config_bytes()
+        return json.loads(current) if current else {k: v for k, v in self.collector.config.items() if not k.startswith("_")}
+
+    def checked_config_bytes(self):
+        current = self.config_path.read_bytes() if self.config_path.exists() else None
+        if current != self.config_digest:
+            raise RepositoryError("config_changed", "Configuration changed outside the dashboard. Restart to reload it before changing repositories.", 409)
+        return current
+
+    def use_registry(self, overrides, *, prioritize=None):
+        """Publish only a committed registry snapshot, retaining CLI sources."""
+        entries = self.effective_entries(overrides)
+        if prioritize:
+            entries.sort(key=lambda item: item["path"] != prioritize)
+        with self.lock:
+            self.registry_overrides = copy.deepcopy(overrides)
+            self.persisted_paths = {item["path"] for item in self.effective_entries(overrides, include_cli=False)}
+            self.collector.config["repositories"] = entries
+            self.registry_revision += 1
+        self.publish(self.read())
+        self.wake.set()
 
     def add_repository(self, body):
         if not self.config_path:
@@ -339,8 +488,6 @@ class LiveState:
             except ValueError as exc:
                 raise RepositoryError("invalid_public_repository", str(exc)) from None
             with self.write_lock:
-                if any(r.get("url") == url for r in self.collector.config["repositories"]):
-                    raise RepositoryError("duplicate", "This public repository is already configured.", 409)
                 item = {"url": url, "path": url, "source_kind": "public", "ref": "HEAD",
                     "name": body.get("name", "").strip() or url.rsplit("/", 1)[-1],
                     "product": body.get("product", "").strip() or "Public repositories",
@@ -350,69 +497,100 @@ class LiveState:
         if not path.is_absolute() or not path.is_dir():
             raise RepositoryError("invalid_path", "Enter an existing absolute local checkout path on this machine.")
         try:
-            _, lazy = _git_capabilities()
-            git = _Git(path.resolve(), lazy)
-            root = Path(os.fsdecode(git.run("rev-parse", "--show-toplevel")).strip()).resolve()
-            common = Path(os.fsdecode(git.run("rev-parse", "--path-format=absolute", "--git-common-dir")).strip()).resolve()
+            root, common, registered = repository_locations(path)
         except Exception:
             raise RepositoryError("invalid_repository", "This path is not an accessible Git worktree.") from None
         with self.write_lock:
             config = self.collector.config
-            registered = {root}
-            raw_worktrees = git.run("worktree", "list", "--porcelain", "-z")
-            for field in raw_worktrees.split(b"\0"):
-                if field.startswith(b"worktree "):
-                    registered.add(Path(os.fsdecode(field[9:])).resolve())
-            known_common = {Path(r["common_dir"]).resolve() for r in self.read()["repositories"] if r.get("common_dir")}
-            if common in known_common:
-                raise RepositoryError("duplicate", "This Git repository is already configured.", 409)
-            for existing in config["repositories"]:
-                if existing.get("url"):
-                    continue
-                old = Path(existing["path"]).resolve()
-                if old in registered:
-                    raise RepositoryError("duplicate", "This repository or a linked worktree is already configured.", 409)
-            if self.config_path.is_relative_to(root) or self.config_path.is_relative_to(common):
-                raise RepositoryError("unsafe_config", "Move dashboard configuration outside the repository.", 409)
             item = {"path": str(root), "name": body.get("name", "").strip() or root.name,
                 "product": body.get("product", "").strip() or "My repositories", "ref": "HEAD",
                 "exclude_globs": list(config["exclude_globs"])}
-            return self.save_repository(item)
+            return self.save_repository(item, extra_locations={common, *registered})
 
-    def save_repository(self, item):
+    def save_repository(self, item, extra_locations=()):
         # Called under write_lock by both source types.
-        config = self.collector.config
-        for monitored in config["repositories"]:
-            if not monitored.get("url") and self.config_path.is_relative_to(Path(monitored["path"]).resolve()):
-                raise RepositoryError("unsafe_config", "Move dashboard configuration outside monitored repositories.", 409)
-        current = self.config_path.read_bytes() if self.config_path.exists() else None
-        if current != self.config_digest:
-            raise RepositoryError("config_changed", "Configuration changed outside the dashboard. Restart to reload it before adding a repository.", 409)
-        raw = json.loads(current) if current else dict(config)
-        raw["repositories"] = list(raw.get("repositories", [])) + [item]
-        atomic_json(self.config_path, raw)
-        self.config_digest = self.config_path.read_bytes()
-        # New items are visited first on the next pass.
-        config["repositories"] = [item] + list(config["repositories"])
-        self.publish(self.read())
-        self.wake.set()
+        self.writable_config(extra_locations=extra_locations)
+
+        def add(overrides):
+            entries = self.effective_entries(overrides)
+            identities = self.identities(entries)
+            self.writable_config(identities=identities, extra_locations=extra_locations, entries=entries)
+            if any(existing["path"] == item["path"] for existing in entries):
+                raise RepositoryError("duplicate", "This repository is already configured.", 409)
+            if not item.get("url"):
+                _, common, _ = repository_locations(item["path"])
+                if any(identity[1] == common for identity in identities.values()):
+                    raise RepositoryError("duplicate", "This repository or a linked worktree is already configured.", 409)
+            overrides[item["path"]] = item
+
+        _, overrides = self.registry.update(add, self.checked_config_bytes)
+        self.use_registry(overrides, prioritize=item["path"])
         return item
+
+    def remove_repository(self, body):
+        if not self.config_path:
+            raise RepositoryError("read_only", "Start with --config to save repository changes from the UI.", 403)
+        if (not isinstance(body, dict) or set(body) != {"path"}
+                or not isinstance(body["path"], str) or not body["path"]
+                or len(body["path"]) > 4096 or any(ord(c) < 32 for c in body["path"])):
+            raise RepositoryError("invalid_input", "Supply the configured repository path or public URL.")
+        path = body["path"]
+        with self.write_lock:
+            self.writable_config()
+
+            def remove(overrides):
+                entries = self.effective_entries(overrides)
+                item = next((item for item in entries if item["path"] == path), None)
+                if item is None:
+                    raise RepositoryError("not_found", "This repository is no longer configured.", 404)
+                identities = self.identities(entries)
+                removed_paths = {path}
+                if path in identities:
+                    common = identities[path][1]
+                    removed_paths.update(key for key, identity in identities.items() if identity[1] == common)
+                for row in self.read()["repositories"]:
+                    aliases = set(row.get("configured_paths", [row["path"]]))
+                    if path in aliases:
+                        removed_paths.update(aliases.intersection(entry["path"] for entry in entries))
+                persisted = {entry["path"] for entry in self.effective_entries(overrides, include_cli=False)}
+                if (not removed_paths <= persisted
+                        or removed_paths.intersection(self.collector.config.get("_cli_paths", []))):
+                    raise RepositoryError("read_only", "This source was supplied with --repo. Remove that command-line argument before restarting.", 403)
+                self.writable_config(identities=identities, entries=entries)
+                for removed in removed_paths:
+                    overrides[removed] = None
+                return {"path": path, "name": item["name"], "configured_paths": sorted(removed_paths)}
+
+            removed, overrides = self.registry.update(remove, self.checked_config_bytes)
+            self.use_registry(overrides)
+            return removed
 
     def loop(self):
         while not self.stop.is_set():
             self.wake.clear()
+            with self.lock:
+                revision = self.registry_revision
             try:
+                if self.registry:
+                    with self.write_lock:
+                        overrides = self.registry.read()
+                        if overrides != self.registry_overrides:
+                            self.checked_config_bytes()
+                            self.use_registry(overrides)
+                            self.wake.clear()
+                            revision = self.registry_revision
                 def progress(data):
                     data["collection_running"] = True
-                    self.publish(data)
+                    self.publish(data, revision)
                     return self.wake.is_set() or self.stop.is_set()
                 data = self.collector.collect(live=True, on_progress=progress)
                 data["collection_running"] = False
-                self.publish(data)
+                self.publish(data, revision)
             except Exception as exc:
                 with self.lock:
-                    self.snapshot["collection_running"] = False
-                    self.snapshot["errors"] = ["Refresh failed: " + type(exc).__name__]
+                    if revision == self.registry_revision:
+                        self.snapshot["collection_running"] = False
+                        self.snapshot["errors"] = ["Refresh failed: " + type(exc).__name__]
             self.wake.wait(self.collector.config["refresh_seconds"])
 
 
@@ -452,7 +630,7 @@ def make_handler(state):
             if self.headers.get("Origin") not in allowed or "http://" + self.headers.get("Host", "") not in allowed:
                 self.send_error(403, "Local same-origin requests only")
                 return
-            if self.path != "/api/repositories":
+            if self.path not in {"/api/repositories", "/api/repositories/remove"}:
                 self.send_error(404)
                 return
             try:
@@ -461,7 +639,10 @@ def make_handler(state):
                     raise RepositoryError("invalid_request", "Send a JSON object no larger than 8 KiB.")
                 self.connection.settimeout(5)
                 body = json.loads(self.rfile.read(length))
-                result, status = {"repository": state.add_repository(body)}, 201
+                if self.path == "/api/repositories/remove":
+                    result, status = {"removed": state.remove_repository(body)}, 200
+                else:
+                    result, status = {"repository": state.add_repository(body)}, 201
             except RepositoryError as exc:
                 result, status = {"error": {"code": exc.code, "message": str(exc)}}, exc.status
             except (ValueError, UnicodeError):
@@ -517,6 +698,7 @@ def main(argv=None):
         state_path = args.state
         if args.command == "serve" and not state_path:
             state_path = Path.home() / ".git-activity-dashboard" / "observations.json"
+        validate_state_destination(args.config, state_path)
         collector = DashboardCollector(config, state_path)
         if args.command == "scan":
             snapshot = collector.collect()

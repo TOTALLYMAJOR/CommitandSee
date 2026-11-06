@@ -1,0 +1,21 @@
+CommitandSee portable distribution
+
+CommitandSee: MIT license; see LICENSE.txt.
+
+CPython interpreter and standard library: Python Software Foundation license and
+included third-party notices; see licenses/Python-LICENSE.txt.
+https://www.python.org/
+
+PyInstaller bootloader: GPL-2.0-or-later with its distribution/bootloader exception.
+The exception permits distributing this application's frozen executable under its
+own license. Full supplied license/exception texts are included under
+licenses/pyinstaller/. PyInstaller is a build tool, not an app-installed dependency.
+https://pyinstaller.org/en/stable/license.html
+
+tzdata: Python Software Foundation's packaged IANA timezone database, Apache-2.0
+and included timezone database notices. Supplied license files are retained under
+licenses/tzdata/. https://pypi.org/project/tzdata/
+
+Git is not redistributed in this archive. The launcher uses the user's installed
+Git for Windows. BUILD-DEPENDENCIES.txt records the isolated build environment;
+it does not mean every build tool is included in the runtime archive.

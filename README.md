@@ -35,6 +35,27 @@ Maybe the code is **uncommitted in another worktree**, **committed but not pushe
 
 *Screenshot of the repository-add flow on a narrow viewport.*
 
+## Portable Windows app
+
+The Windows portable bundle includes Python. Install Git for Windows, extract
+**the whole ZIP**, and open `CommitandSee.exe`; the dashboard opens in your default
+browser. Use **Add repository** to choose a local checkout or a public GitHub URL.
+See [release notes](RELEASE-NOTES.md) for candidate status and
+[GitHub Releases](https://github.com/TOTALLYMAJOR/CommitandSee/releases) for
+published download assets.
+
+Keep the launcher console open while using the dashboard; press **Ctrl+C** there
+to stop it. Closing the browser tab does not stop collection. Settings, registry,
+observations, and public caches are stored under `%LOCALAPPDATA%\CommitandSee`,
+separate from the extracted app. To update, stop the app and replace its complete
+extracted folder; your saved data remains. Stop all instances before backing up
+or moving the configuration and its registry together.
+
+This is a Windows-specific, unsigned portable build, with no installed background
+service or automatic updater. The Git prerequisite and platform-specific build
+are intentional. [Packaging instructions](packaging/README.md) explain how to
+build it; the Python source quick start below remains available.
+
 ## Quick start
 
 Install **Python 3.11+** and **Git 2.37+**. Then run:
@@ -107,7 +128,7 @@ Click **Add repository** and choose a source:
   working files, branches, linked worktrees, and stashes.
 
 Optionally choose a display name and product. The dashboard validates Git
-identity, saves the configuration, and queues observation. Registered linked
+identity, saves the source in a companion registry, and queues observation. Registered linked
 worktrees are included automatically; duplicate checkouts sharing the same Git
 common directory are rejected. Use WSL paths such as `/mnt/c/Users/...` for Windows
 checkouts when the observer runs in WSL.
@@ -138,6 +159,29 @@ not a freshness guarantee.
 ![Add repository dialog with public GitHub and local checkout choices](docs/images/add-repository.png)
 
 *Actual 390px browser capture of the insertion dialog.*
+
+## Remove a repository from the dashboard
+
+In the repository table, choose **Remove** and confirm the named repository.
+The dashboard records a removal in its companion registry and stops showing
+observations for that source, including results from a scan already in progress. Checkout files,
+Git history, observation history, and downloaded public caches remain on disk.
+You can add the repository again later.
+
+Removal is available for sources managed by the `--config` session. Sources also
+supplied with `--repo` must be removed from the launch command; static reports
+cannot change the registry. If several configured paths represent the same Git
+repository, removing their combined row removes those saved aliases together.
+External configuration edits require a restart before adding or removing sources.
+
+Dashboard actions leave the JSON configuration unchanged. On the first add or
+remove, the app creates `<config filename>.registry.sqlite3` beside it. Keep both
+files outside every monitored checkout and registered linked worktree, and back
+up or move them together while all observers are stopped. The JSON remains the
+base configuration; the registry stores additions and removal overrides. A base
+entry removed through the dashboard stays removed after external JSON edits
+until you add it again through the dashboard. Existing configurations need no
+migration, and startup alone creates no registry.
 
 ## Bring your repositories together
 
@@ -241,8 +285,9 @@ use `serve` for automatic updates. The dashboard also has an **Export JSON** but
 
 ## Local by design
 
-The HTTP server binds to **127.0.0.1**. The observer does not stage, commit, push,
-merge, fetch, prune, reset, or delete repository work. Git observations disable
+The HTTP server binds to **127.0.0.1**. Local-checkout observation does not stage,
+commit, push, merge, fetch, prune, reset, or delete repository work. Public-source
+history is fetched only into the dashboard-owned bare cache. Git observations disable
 optional locks, executable filesystem-monitor callbacks, and signature display.
 Temporary Git configuration overrides are scrubbed. Configured content
 filters can make working measurements unavailable rather than execute them.
@@ -264,19 +309,45 @@ and Git inside WSL. For a Windows checkout, from PowerShell:
 py -3 git_dashboard.py serve --repo "C:\Users\you\projects\my-app"
 ```
 
-Local validation was performed on WSL/Linux. Native Windows execution has not
-been qualified in this workspace.
+The full Python suite is validated on WSL/Linux. Targeted subprocess cancellation
+checks also run on native Windows; see the recorded versions and boundaries in
+[VERIFICATION.md](VERIFICATION.md). Native Windows UI and end-to-end collection
+are not covered by those targeted checks.
 
 ## Run the checks
 
 ```bash
-python3 -B -m unittest -v test_git_metrics.py test_dashboard.py test_review_regressions.py
+python3 -B -m unittest -v
 ```
+
+Browser regressions are optional development checks and require an existing Node,
+Playwright, and browser installation; they are not application dependencies:
+
+```bash
+BROWSER_ENGINE=chromium node test_dashboard_browser.cjs
+BROWSER_ENGINE=firefox node test_dashboard_browser.cjs
+BROWSER_ENGINE=webkit node test_dashboard_browser.cjs
+```
+
+If those tools are installed outside the project, `PLAYWRIGHT_MODULE` can name
+the installed Playwright module and `BROWSER_EXECUTABLE` the browser executable.
+`CHROMIUM_EXECUTABLE` remains a Chromium-only compatibility alias. Run engines
+sequentially. An installed `axe-core` (or `AXE_CORE_MODULE` path) enables automated
+accessibility checks; a missing optional scanner is reported as skipped.
+The browser tests use synthetic data and intercepted responses, with no GitHub
+requests or changes to your repository configuration.
 
 Tests use disposable repositories and offline fixtures, without your credentials
 or project repositories. See [`VERIFICATION.md`](VERIFICATION.md) for recorded
 evidence and limitations. [`CHECKSUMS.sha256`](CHECKSUMS.sha256) records package-file
 integrity checks.
+
+## Contribute and follow releases
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for small, reproducible contributions and
+[release notes](RELEASE-NOTES.md) for changes and upgrade guidance. Published
+versions are listed on [GitHub Releases](https://github.com/TOTALLYMAJOR/CommitandSee/releases).
+CommitandSee is available under the [MIT license](LICENSE).
 
 ---
 
