@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import copy
 import hashlib
 import json
@@ -12,6 +13,7 @@ import sys
 import tempfile
 import threading
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
@@ -20,6 +22,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from git_metrics import collect_repository, GitError, _Git, _git_capabilities
 from public_repositories import public_url, public_metadata, collect_public
 from repository_registry import RepositoryRegistry, validate_state_destination
+from github_auth import GitHubAuth, GitHubAuthError, github_app_config
+from authenticated_repositories import collect_authenticated
 
 ROOT = Path(__file__).resolve().parent
 DEFAULTS = {
@@ -27,6 +31,8 @@ DEFAULTS = {
     "days": 180, "refresh_seconds": 30, "history_refresh_seconds": 300,
     "max_commits": 20000, "stale_days": 14, "exclude_globs": [],
 }
+GITHUB_SOURCE_FIELDS = {"source_kind", "url", "path", "name", "product", "ref", "exclude_globs",
+                        "github_repository_id", "github_account_id", "installation_id", "private"}
 
 
 def utc_now():
@@ -66,7 +72,18 @@ def merge_repositories(base_entries, overrides, base):
 def normalize_repositories(repos, base, config, ref=None):
     configured = []
     for entry in repos:
-        if isinstance(entry, dict) and "url" in entry:
+        if isinstance(entry, dict) and entry.get("source_kind") == "github":
+            if set(entry) - GITHUB_SOURCE_FIELDS:
+                raise ValueError("GitHub repository entries may contain only repository metadata, never credentials.")
+            if any(type(entry.get(key)) is not int or entry[key] <= 0
+                   for key in ("github_repository_id", "github_account_id", "installation_id")):
+                raise ValueError("GitHub sources need positive repository, account, and installation IDs.")
+            if type(entry.get("private")) is not bool:
+                raise ValueError("GitHub repository visibility must be a boolean.")
+            item = dict(entry)
+            item["url"] = public_url(item.get("url"))
+            item.update(path=item["url"], source_kind="github", ref="HEAD")
+        elif isinstance(entry, dict) and "url" in entry:
             item = dict(entry)
             item["url"] = public_url(item["url"])
             item.update(path=item["url"], source_kind="public", ref="HEAD")
@@ -94,6 +111,7 @@ def read_config(args):
     config = dict(DEFAULTS)
     repos = []
     base = Path.cwd()
+    raw = {}
     if args.config:
         source = Path(args.config).expanduser().resolve()
         config["_config_digest"] = source.read_bytes()
@@ -107,6 +125,7 @@ def read_config(args):
         base = source.parent
         config["_base_repositories"] = copy.deepcopy(repos)
         config["_registry_overrides"] = RepositoryRegistry(source).read()
+    config["github_app"] = github_app_config(raw.get("github_app"))
     for arg, field in (("days", "days"), ("interval", "refresh_seconds"),
                        ("timezone", "timezone"), ("max_commits", "max_commits"),
                        ("stale_days", "stale_days")):
@@ -210,13 +229,34 @@ class ObservationTracker:
             self.error = f"Could not save observation history: {exc}"
 
 
+def github_unavailable(item, status):
+    """Retain configured identity, but never retain a disconnected observation."""
+    result = {key: copy.deepcopy(value) for key, value in item.items() if key in GITHUB_SOURCE_FIELDS}
+    result.update(id=item["path"], path=item["path"], configured_paths=[item["path"]],
+        source_kind="github", status="auth_required", authentication_required=True,
+        github_generation=status.get("generation"), history=None, head=None, collected_at=None,
+        worktrees=[], branches=[], remote_branches=[], stashes=[], warnings=[],
+        errors=["Sign in to the linked GitHub account to observe this repository."],
+        source_status={key: "not_requested" for key in ("history", "worktrees", "branches", "stashes")})
+    return result
+
+
+def github_session(status, item=None):
+    user = status.get("user") or {}
+    return (status.get("status") == "connected" and type(user.get("id")) is int
+            and (item is None or user["id"] == item.get("github_account_id")))
+
+
 class DashboardCollector:
-    def __init__(self, config, state_path=None):
+    def __init__(self, config, state_path=None, auth=None):
         self.config = config
+        self.auth = auth if auth is not None else GitHubAuth(github_app_config(config.get("github_app")))
         self.tracker = ObservationTracker(state_path)
         self.history_cache = {}
         self.public_cache = {}
         self.public_cache_root = (Path(state_path).expanduser().resolve().parent if state_path else Path.home() / ".git-activity-dashboard") / "public-repositories"
+        self.github_cache_root = self.public_cache_root.with_name("github-repositories")
+        self.github_cache = {}
 
     def collect(self, *, live=False, on_progress=None):
         began = time.monotonic()
@@ -227,6 +267,36 @@ class DashboardCollector:
         seen = {}
         # Public items added through the form must not wait behind a large local scan.
         for item in sorted(list(self.config["repositories"]), key=lambda r: not bool(r.get("url"))):
+            if item.get("source_kind") == "github":
+                status = self.auth.status()
+                if not github_session(status, item):
+                    repo = github_unavailable(item, status)
+                else:
+                    generation, account = status["generation"], status["user"]["id"]
+                    key = (account, item["github_repository_id"], generation, history_day(self.config["timezone"]))
+                    cached = self.github_cache.get(key)
+                    try:
+                        reused = cached and time.monotonic() - cached[0] < max(60, self.config["history_refresh_seconds"])
+                        if reused:
+                            # Refresh an expired in-memory access token before
+                            # session_guard checks validity, even without a fetch.
+                            self.auth.token()
+                            repo = copy.deepcopy(cached[1])
+                            if repo.get("history"):
+                                repo["history"]["cached"] = True
+                        else:
+                            repo = collect_authenticated(item, self.github_cache_root, self.config, self.auth)
+                        with self.auth.session_guard(generation, account):
+                            repo["github_generation"] = generation
+                            if not reused and repo.get("history") is not None:
+                                self.github_cache[key] = (time.monotonic(), copy.deepcopy(repo))
+                    except GitHubAuthError:
+                        repo = github_unavailable(item, self.auth.status())
+                repo.update(product=item["product"], products=[item["product"]], configured_paths=[item["path"]])
+                result["repositories"].append(repo)
+                if on_progress and on_progress(result):
+                    break
+                continue
             if item.get("url"):
                 for local in self.config["repositories"]:
                     if not local.get("url") and self.public_cache_root.resolve().is_relative_to(Path(local["path"]).resolve()):
@@ -348,6 +418,8 @@ def repository_locations(path):
 class LiveState:
     def __init__(self, collector, config_path=None):
         self.collector = collector
+        self.auth = collector.auth
+        self.github_session_id = uuid.uuid4().hex
         self.config_path = Path(config_path).expanduser().resolve() if config_path else None
         self.config_digest = collector.config.get("_config_digest",
             self.config_path.read_bytes() if self.config_path and self.config_path.exists() else None)
@@ -367,10 +439,46 @@ class LiveState:
             "timezone": collector.config["timezone"], "refresh_seconds": collector.config["refresh_seconds"],
             "generated_at": utc_now(), "live": True, "demo": False, "errors": [],
             "collection_running": True, "repositories": []}
+        self.auth.set_on_change(self.github_auth_changed)
         self.publish(self.snapshot)
         self.worker = threading.Thread(target=self.loop, name="git-observer", daemon=True)
 
     def publish(self, data, revision=None):
+        status = self.auth.status()
+        guard = (self.auth.session_guard(status["generation"], status["user"]["id"])
+                 if github_session(status) else nullcontext())
+        try:
+            with guard:
+                self._publish(data, revision, status)
+        except GitHubAuthError:
+            self._publish(data, revision, self.auth.status(), force_private_clear=True)
+
+    def sanitize_github(self, snapshot, status, *, force_private_clear=False):
+        observation_fields = {"id", "status", "history", "head", "collected_at", "worktrees", "branches",
+            "remote_branches", "stashes", "errors", "warnings", "source_status", "products", "configured_paths",
+            "removable", "github_generation", "authentication_required"}
+        sanitized = []
+        for row in snapshot["repositories"]:
+            if row.get("source_kind") != "github":
+                sanitized.append(row)
+                continue
+            permitted = (not force_private_clear and github_session(status, row)
+                and (row.get("github_generation") == status["generation"]
+                     or (row.get("status") == "pending" and row.get("history") is None)))
+            if permitted:
+                row = {key: value for key, value in row.items() if key in GITHUB_SOURCE_FIELDS | observation_fields}
+                row["authentication_required"] = False
+            else:
+                unavailable = github_unavailable(row, status)
+                unavailable["removable"] = row.get("removable", False)
+                row = unavailable
+            sanitized.append(row)
+        snapshot["repositories"] = sanitized
+        snapshot["github_generation"] = status.get("generation")
+        snapshot["github_session_id"] = self.github_session_id
+        return snapshot
+
+    def _publish(self, data, revision, auth_status, *, force_private_clear=False):
         with self.lock:
             if revision is not None and revision != self.registry_revision:
                 return
@@ -395,11 +503,111 @@ class LiveState:
                 row["removable"] = bool(self.config_path and represented <= self.persisted_paths
                     and not represented.intersection(self.collector.config.get("_cli_paths", [])))
             snapshot["repository_management"] = self.config_path is not None
-            self.snapshot = snapshot
+            self.snapshot = self.sanitize_github(snapshot, auth_status, force_private_clear=force_private_clear)
 
     def read(self):
-        with self.lock:
-            return copy.deepcopy(self.snapshot)
+        status = self.auth.status()
+        guard = (self.auth.session_guard(status["generation"], status["user"]["id"])
+                 if github_session(status) else nullcontext())
+        try:
+            with guard:
+                with self.lock:
+                    return self.sanitize_github(copy.deepcopy(self.snapshot), status)
+        except GitHubAuthError:
+            status = self.auth.status()
+            with self.lock:
+                return self.sanitize_github(copy.deepcopy(self.snapshot), status, force_private_clear=True)
+
+    def github_auth_changed(self, status):
+        self.collector.github_cache.clear()
+        self.publish(self.read())
+        self.wake.set()
+
+    def require_github_session(self):
+        if not self.config_path:
+            raise RepositoryError("read_only", "Start with --config to import GitHub repositories.", 403)
+        status = self.auth.status()
+        if not github_session(status):
+            raise RepositoryError("authentication_required", "Sign in to GitHub first.", 401)
+        return status["generation"], status["user"]["id"]
+
+    def github_status(self):
+        return {**self.auth.status(), "github_session_id": self.github_session_id}
+
+    def github_response(self, result, generation=None):
+        return {**result, "github_session_id": self.github_session_id,
+                "github_generation": self.auth.generation if generation is None else generation}
+
+    def github_action(self, action, body):
+        if not isinstance(body, dict) or body:
+            raise RepositoryError("invalid_input", "Send an empty JSON object for this action.")
+        if not self.config_path:
+            raise RepositoryError("read_only", "Start with --config to manage GitHub repositories.", 403)
+        result = getattr(self.auth, action)()
+        return self.github_response(result, result["generation"])
+
+    def github_repositories(self, body):
+        if not isinstance(body, dict) or body:
+            raise RepositoryError("invalid_input", "Send an empty JSON object to discover repositories.")
+        generation, account = self.require_github_session()
+        result = self.auth.repositories()
+        with self.auth.session_guard(generation, account):
+            return self.github_response(copy.deepcopy(result), generation)
+
+    def import_github_repositories(self, body):
+        if (not isinstance(body, dict) or set(body) != {"repository_ids"}
+                or not isinstance(body["repository_ids"], list) or not 1 <= len(body["repository_ids"]) <= 50
+                or any(type(value) is not int or value <= 0 for value in body["repository_ids"])):
+            raise RepositoryError("invalid_input", "Select between 1 and 50 GitHub repository IDs.")
+        generation, account = self.require_github_session()
+        result = {"imported": [], "already_configured": [], "failed": []}
+        selected = []
+        for repository_id in dict.fromkeys(body["repository_ids"]):
+            try:
+                metadata = self.auth.repository(repository_id)
+                if metadata.get("id") != repository_id:
+                    raise ValueError("Repository identity changed.")
+                item = normalize_repositories([{
+                    "source_kind": "github", "url": metadata.get("html_url"),
+                    "name": metadata.get("full_name") or metadata.get("name"), "product": "GitHub repositories",
+                    "github_repository_id": repository_id, "github_account_id": account,
+                    "installation_id": metadata.get("installation_id"), "private": metadata.get("private"),
+                    "ref": "HEAD", "exclude_globs": list(self.collector.config["exclude_globs"]),
+                }], self.config_path.parent, self.collector.config)[0]
+                selected.append(item)
+            except GitHubAuthError as exc:
+                result["failed"].append({"id": repository_id, "code": exc.code, "message": str(exc)})
+            except (ValueError, TypeError):
+                result["failed"].append({"id": repository_id, "code": "invalid_repository",
+                                         "message": "GitHub returned invalid repository metadata."})
+        with self.write_lock:
+            self.writable_config()
+            with self.auth.session_guard(generation, account):
+                if not selected:
+                    return self.github_response(result, generation)
+
+                def add(overrides):
+                    current = self.effective_entries(overrides)
+                    paths = {entry["path"] for entry in current}
+                    ids = {entry.get("github_repository_id") for entry in current if entry.get("source_kind") == "github"}
+                    for item in selected:
+                        summary = {"id": item["github_repository_id"], "name": item["name"], "url": item["url"]}
+                        if item["path"] in paths or item["github_repository_id"] in ids:
+                            result["already_configured"].append(summary)
+                            continue
+                        overrides[item["path"]] = item
+                        paths.add(item["path"])
+                        ids.add(item["github_repository_id"])
+                        result["imported"].append(summary)
+
+                def guarded_config():
+                    self.checked_config_bytes()
+                    with self.auth.session_guard(generation, account):
+                        pass
+
+                _, overrides = self.registry.update(add, guarded_config)
+                self.use_registry(overrides)
+                return self.github_response(result, generation)
 
     def entry_path(self, item):
         """Normalize persisted relative paths without discarding entry metadata."""
@@ -608,6 +816,16 @@ def make_handler(state):
                 data, content_type = render_html(state.read()).encode("utf-8"), "text/html; charset=utf-8"
             elif route == "/api/snapshot":
                 data, content_type = json.dumps(state.read(), ensure_ascii=True, allow_nan=False).encode("utf-8"), "application/json"
+            elif route == "/api/github/status":
+                self.json_response(state.github_status())
+                return
+            elif route == "/github-setup":
+                try:
+                    data = (ROOT / "docs" / "GITHUB-APP-SETUP.md").read_bytes()
+                except OSError:
+                    self.send_error(404)
+                    return
+                content_type = "text/plain; charset=utf-8"
             elif route == "/favicon.ico":
                 self.send_response(204)
                 self.end_headers()
@@ -628,10 +846,12 @@ def make_handler(state):
         def do_POST(self):
             allowed = {f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}
             if self.headers.get("Origin") not in allowed or "http://" + self.headers.get("Host", "") not in allowed:
-                self.send_error(403, "Local same-origin requests only")
+                self.json_response({"error": {"code": "forbidden", "message": "Local same-origin requests only."}}, 403)
                 return
-            if self.path not in {"/api/repositories", "/api/repositories/remove"}:
-                self.send_error(404)
+            github_actions = {"/api/github/" + action: action for action in ("start", "cancel", "disconnect")}
+            if self.path not in {"/api/repositories", "/api/repositories/remove",
+                                 "/api/github/repositories", "/api/github/import", *github_actions}:
+                self.json_response({"error": {"code": "not_found", "message": "Unknown endpoint."}}, 404)
                 return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -639,22 +859,32 @@ def make_handler(state):
                     raise RepositoryError("invalid_request", "Send a JSON object no larger than 8 KiB.")
                 self.connection.settimeout(5)
                 body = json.loads(self.rfile.read(length))
-                if self.path == "/api/repositories/remove":
+                if self.path in github_actions:
+                    result, status = state.github_action(github_actions[self.path], body), 200
+                elif self.path == "/api/github/repositories":
+                    result, status = state.github_repositories(body), 200
+                elif self.path == "/api/github/import":
+                    result, status = state.import_github_repositories(body), 200
+                elif self.path == "/api/repositories/remove":
                     result, status = {"removed": state.remove_repository(body)}, 200
                 else:
                     result, status = {"repository": state.add_repository(body)}, 201
-            except RepositoryError as exc:
+            except (RepositoryError, GitHubAuthError) as exc:
                 result, status = {"error": {"code": exc.code, "message": str(exc)}}, exc.status
             except (ValueError, UnicodeError):
                 result, status = {"error": {"code": "invalid_json", "message": "Invalid JSON request."}}, 400
             except OSError:
                 result, status = {"error": {"code": "storage_failed", "message": "Could not save dashboard configuration."}}, 503
+            self.json_response(result, status)
+
+        def json_response(self, result, status=200):
             payload = json.dumps(result).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(payload)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
             self.end_headers()
             self.wfile.write(payload)
 
@@ -701,10 +931,13 @@ def main(argv=None):
         validate_state_destination(args.config, state_path)
         collector = DashboardCollector(config, state_path)
         if args.command == "scan":
-            snapshot = collector.collect()
-            export_html(args.output, snapshot)
-            if args.json_output:
-                atomic_json(args.json_output, snapshot)
+            try:
+                snapshot = collector.collect()
+                export_html(args.output, snapshot)
+                if args.json_output:
+                    atomic_json(args.json_output, snapshot)
+            finally:
+                collector.auth.close()
             ok = sum(r["status"] != "error" for r in snapshot["repositories"])
             print(f"Report: {Path(args.output).resolve()} ({ok}/{len(snapshot['repositories'])} repositories observed)")
             return 0 if ok else 2
@@ -721,6 +954,7 @@ def main(argv=None):
             state.stop.set()
             state.wake.set()
             server.server_close()
+            state.auth.close()
             state.worker.join(timeout=2)
         return 0
     except (OSError, ValueError, TypeError) as exc:

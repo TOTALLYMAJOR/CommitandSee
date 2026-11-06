@@ -99,7 +99,7 @@ class SubprocessCancellationTests(unittest.TestCase):
         self.assertEqual(json.loads(out[4:].decode("utf-8")), [value, value])
         self.assertEqual(err, b"warning\r\n")
 
-    def fetch_with_helper(self, *, overflow):
+    def fetch_with_helper(self, *, overflow, cancel_check=None):
         helpers = self.root / "helpers"
         helpers.mkdir()
         child_ready = self.root / "child-ready"
@@ -130,10 +130,18 @@ class SubprocessCancellationTests(unittest.TestCase):
         git = PublicGit(cache)
         git.run("init", "--bare", "--template=", str(cache))
         git.prefix.insert(1, "--exec-path=" + str(helpers))
+        options = {"timeout": 5 if overflow or cancel_check is not None else 2}
+        if cancel_check is not None:
+            options["cancel_check"] = cancel_check
         git.run("fetch", "--quiet", "--depth=2000", "--no-tags",
                 "--no-recurse-submodules", "--no-auto-maintenance", "--",
                 "https://127.0.0.1:1/fixture/offline.git",
-                "+refs/heads/main:refs/heads/observed", timeout=5 if overflow else 2)
+                "+refs/heads/main:refs/heads/observed", **options)
+
+    def test_cancellation_stops_git_transport_helper_and_child(self):
+        with self.assertRaisesRegex(GitError, "cancelled"):
+            self.fetch_with_helper(overflow=False, cancel_check=self.pids.exists)
+        self.assert_descendants_stopped()
 
     def test_timeout_stops_git_transport_helper_and_child(self):
         with self.assertRaisesRegex(GitError, "exceeded 2 seconds"):

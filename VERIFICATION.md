@@ -266,3 +266,121 @@ coverage remains `GRAPH_COVERAGE_BLOCKED` for PowerShell line 19 (partial parser
 coverage) and the PyInstaller spec (not tracked by the graph). The recipe and
 new smoke harnesses use bounded `DIRECT_SOURCE_VERIFIED` inspection and actual
 native execution instead. This is not an exhaustive graph-impact claim.
+
+
+## GitHub authorization and repository import — November 6, 2026
+
+This source revision starts from `785f6016e8c68728569edb2e1b67bdd95c79d111`.
+The owner selected built-in GitHub App device authorization and a searchable
+repository picker. The published `v0.2.0-rc.1` ZIP is unchanged and does not
+contain this feature. Public publisher identifiers ship in
+`github_app_defaults.json`; credentials stay in memory for the running session.
+
+### Source and boundary regressions
+
+`python3 -B -m unittest -v` ran **145 tests in 27.224 seconds: 141 passed and
+four platform-specific tests skipped** on WSL/Linux. This includes 24 auth,
+16 authenticated collector, 16 HTTP/import integration, 16 portable launcher,
+and one complete offline HTTP/auth/registry flow, together with existing
+local/public, storage, metric, UI-backend, and subprocess regressions.
+
+The HTTP flow uses the real local server and auth state machine with an injected
+provider. It exercises device authorization, discovery, selected-only import,
+duplicate import, disconnect, and restart persistence. Captured responses and
+all disposable saved files are checked for synthetic access, refresh, and device
+credentials. This fixture does not download a real GitHub repository.
+
+Other regressions cover strict provider endpoints, response limits, device
+polling/backoff/expiry, revoked access, serialized refresh, account/generation
+barriers, read-only installation grants, discovery truncation, transaction
+rollback, stale scan/cache publication, config/cache containment, cache identity,
+symlinks/hardlinks/junctions, incomplete caches, and secret-free Git arguments.
+An optional cancellation predicate stops an authenticated fetch's process tree
+when its account session changes, preserving existing output/lifetime bounds.
+
+Independent review identified and verified corrections for two additional
+integration defects: an expired access token was checked before refresh during
+automatic collection, and browser session changes could leave stale private
+picker data or observations visible. Targeted regressions reproduced the issues
+before correction. Independent checks passed five Python cases and three
+Chromium session-race cases. This was a bounded review, not an exhaustive
+security or hostile-same-user filesystem assessment.
+
+Native Windows collector validation ran **16 tests: 15 passed, one POSIX-only
+link test skipped**, including an actual Windows junction fixture, in 26.035
+seconds. Native subprocess cancellation passed **9/9**. The earlier full native
+launcher run passed **15/15**; the subsequently added bundled-default checks
+also passed natively. Native runtime was Python 3.14.3 and Git
+2.56.0.windows.2 on Windows 11 Pro for Workstations build 26300.
+
+### Actual GitHub provider evidence
+
+An unauthenticated public GitHub API read verified the owner-supplied
+CommitandSee registration, matching App ID `5638377`, Client ID and slug. Its
+reported repository permissions were exactly Contents: read and Metadata: read,
+with no subscribed events. The live source preview then obtained a real GitHub
+device code without logging it. The owner completed authorization and selected
+one private repository through the dashboard. Safe status counters subsequently
+showed a connected account, one authenticated private source, available history,
+and zero repository collection errors.
+
+These observations establish one actual sign-in and selected private-history
+collection on the tested source preview. They do not establish every account,
+organization policy, live revocation/refresh path, clean-machine compatibility,
+or general release acceptance. Repository identity, paths, user/device codes,
+and tokens are omitted from the evidence record. Disconnect and removal retain
+already-downloaded private Git objects; saved selections persist without tokens.
+
+### Final browser validation
+
+Both browser suites ran sequentially within each engine using
+`node --test --test-concurrency=1 test_dashboard_browser.cjs test_github_browser.cjs`.
+All **26/26 cases passed in each engine, zero skips**: Chromium in 54.692 seconds,
+Firefox in 95.358 seconds, and WebKit in 152.451 seconds (**78 cases total**).
+The 27 scoped axe scans (nine per engine) reported no tested violations.
+
+The auth fixtures cover code/cancel/retry states, repository search and selection,
+partial imports, stale responses, cross-tab disconnect and failed verification,
+keyboard focus, and 500-row picker scrolling at 1440×1000 and 390×844. Requests
+use synthetic local API responses; external origins are blocked. No page
+exceptions or unexpected console warnings were observed. Known released-context
+and software-rendering messages remain separately classified. These checks do
+not establish comprehensive accessibility, a native user browser appearance, or
+owner visual acceptance.
+
+### GitHub-enabled Windows portable artifact
+
+Final artifact: `CommitandSee-0.3.0-rc.1-Windows-x64-cd56dec4f860.zip`,
+**10,980,028 bytes**, SHA-256
+`6643544b7ad6338cd2bf4a76d0234e1560589b31f040ab3d30b0b9c97be529c7`.
+Its 21-input digest is
+`cd56dec4f86016475e222b28172dc0a86c6131f7e6a8d11e87fb823aeef81749`.
+All 21 captured inputs matched the final source. The archive has 681 entries,
+passed ZIP CRC validation, and contains no settings, observation-state, or
+SQLite entries. BUILD-INFO records Python 3.14.3, PyInstaller 6.22.3, and
+tzdata 2026.6 on the native Windows host identified above.
+
+The extracted final ZIP passed empty onboarding, local repository addition,
+observation of a fixture commit, restart persistence, removal, and another
+restart. Python was absent from the launched executable's PATH. Checkout/Git
+bytes and extracted bundle bytes were unchanged by the smoke workflow.
+
+Bundled public defaults configured GitHub without environment overrides. The
+installation URL and locally served setup guide were verified. The actual
+provider issued a device code, cancellation returned to disconnected state,
+shutdown stopped a second pending authorization, and restart began without a
+session. An explicit empty configuration override correctly disabled the
+defaults. Device codes and tokens were not logged; checked saved settings and
+logs contained none of the issued code values.
+
+Ctrl+Break during a stalled Git command with a child exited the launcher with
+code zero and stopped both processes in **2.428 seconds**, before the command
+timeout. An initial probe used the wrong extracted executable path and failed
+before app startup; the corrected invocation produced the recorded passing
+result. No host PowerShell execution policy was changed.
+
+The native check did not complete user authorization or collect actual private
+GitHub history; that proof belongs to the separate source-preview flow above.
+Native browser appearance, clean-machine compatibility, SmartScreen reputation,
+signed-installer behavior, and complete accessibility remain unqualified. This
+is an unsigned prerelease, with Git for Windows still required.

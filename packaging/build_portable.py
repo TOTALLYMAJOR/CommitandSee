@@ -14,10 +14,13 @@ import subprocess
 import sys
 import zipfile
 
-VERSION = '0.2.0-rc.1'
+# Prospective package version; changing this recipe does not publish an artifact.
+VERSION = '0.3.0-rc.1'
 INPUTS = (
     'portable_launcher.py', 'git_dashboard.py', 'git_metrics.py', 'windows_job.py',
     'public_repositories.py', 'repository_registry.py', 'dashboard.html', 'demo.html',
+    'github_auth.py', 'authenticated_repositories.py', 'github_app_defaults.json',
+    'docs/GITHUB-APP-SETUP.md',
     'demo.json', 'LICENSE', 'packaging/CommitandSee.spec',
     'packaging/requirements-build.txt', 'packaging/build-windows.ps1',
     'packaging/build_portable.py', 'packaging/START-HERE.txt',

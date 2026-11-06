@@ -24,12 +24,28 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
 
 .metric-icon{position:absolute;right:12px;top:14px;width:28px;height:28px;float:none;margin:0}.metric-icon svg{width:15px;height:15px}.metric-label{padding-right:28px;min-height:34px}.metric-value{font-size:25px;white-space:nowrap}.refresh-icon{display:none}#topo-canvas{opacity:.3}.panel-symbol{margin-bottom:14px}.panel-sub{margin-left:50px}@media(max-width:640px){.panel-sub{margin-left:0}.metric-label{font-size:12px}.metric-value{font-size:23px}}
 </style>
+<style>
+/* GitHub connection uses the same local dashboard palette and native dialog. */
+#github-dialog{width:min(680px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto}
+#github-dialog [hidden]{display:none!important}#github-dialog .dialog-actions{flex-wrap:wrap}
+.github-section{margin-top:20px}.github-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}
+.github-toolbar p{flex:1;min-width:160px}.github-code{display:block;font-size:27px;letter-spacing:.15em;padding:16px 0;color:#a7f3d0;overflow-wrap:anywhere}
+#github-error{color:#fda4af;white-space:pre-wrap}#github-status{margin-top:16px}#github-results{white-space:pre-wrap;color:#a7f3d0;margin-top:12px}
+#github-repositories{list-style:none;margin:12px 0;padding:0;max-height:280px;overflow:auto;border:1px solid #ffffff1a;border-radius:10px}
+#github-repositories:empty{display:none}.github-repository{border-bottom:1px solid #ffffff1a}.github-repository:last-child{border-bottom:0}
+#github-dialog .github-repository label{display:flex;align-items:flex-start;gap:12px;margin:0;padding:12px;cursor:pointer}
+#github-dialog input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin:3px 0 0;padding:0}
+.github-repository-name{display:block;overflow-wrap:anywhere}.github-repository-copy{min-width:0}.github-repository .chip{margin-top:5px;margin-right:6px}
+#github-import,#github-start{background:linear-gradient(110deg,#34d399,#6366f1);color:#030712;border:0}
+#github-session-note{font-size:12px}#github-access{display:inline-block;margin-top:12px}
+@media(max-width:640px){#github-dialog{padding:20px}.github-toolbar{align-items:stretch}.github-toolbar button{flex:1}#github-dialog .dialog-actions button{flex:1}}
+</style>
 </head>
 <body>
 <div id="ambient" aria-hidden="true"><canvas id="topo-canvas"></canvas></div>
 <main class="shell">
   <header class="masthead">
-    <div><div class="eyebrow"><span class="git-mark" aria-hidden="true"></span>Python + Git · Local &amp; public repositories</div><h1 id="page-title">Git activity dashboard</h1><p class="subtitle">Your development activity, from committed changes to work still waiting.</p></div>
+    <div><div class="eyebrow"><span class="git-mark" aria-hidden="true"></span>Python + Git · Local &amp; GitHub repositories</div><h1 id="page-title">Git activity dashboard</h1><p class="subtitle">Your development activity, from committed changes to work still waiting.</p></div>
     <div class="live-box"><span class="chip" id="connection"><span class="dot" aria-hidden="true"></span><span id="connection-label">Loading snapshot</span></span><small class="muted" id="updated">Waiting for an observation</small></div>
   </header>
   <div class="banner" id="demo-banner" hidden><strong>Demo</strong><span>Synthetic sample data. These are not measurements of your repositories.</span></div>
@@ -38,7 +54,7 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
     <div class="field"><label for="product-select">Product</label><select id="product-select"><option value="">All products</option></select></div>
     <div class="field"><label for="repo-select">Repository</label><select id="repo-select"><option value="">All repositories</option></select></div>
     <div class="field"><label for="range-select">History window</label><select id="range-select"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="all" selected>All collected history</option></select></div>
-    <div class="control-actions"><button id="add-button" type="button" hidden>Add repository</button><button id="export-button" type="button">Export JSON</button><button id="refresh-button" type="button"><span class="refresh-icon" aria-hidden="true">↻</span>Refresh view</button></div>
+    <div class="control-actions"><button id="add-button" type="button" hidden>Add repository</button><button id="github-button" type="button" hidden>Connect GitHub</button><button id="export-button" type="button">Export JSON</button><button id="refresh-button" type="button"><span class="refresh-icon" aria-hidden="true">↻</span>Refresh view</button></div>
   </div>
   <div class="scope-note"><span id="selection-note"></span><span id="timezone-note"></span></div>
   <section class="metrics" id="metrics" aria-label="Selected repository metrics"></section>
@@ -61,9 +77,27 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
   </section>
   <details class="panel details-panel section-gap" id="coverage-details"><summary id="coverage-summary">Observation coverage</summary><div class="errors-list" id="coverage-content"></div></details>
   <details class="panel details-panel"><summary>How these metrics are counted</summary><div class="method-copy"><div><h3>Committed history</h3><p>Each repository uses its selected ref. Commit and line charts use non-merge commits reachable from that ref, grouped by commit time in the displayed timezone. They measure recorded churn, not total source-code size or product completion. Binary changes have no numeric LOC. Shallow, truncated, or unavailable history remains marked as partial.</p><p>Filtering the history window changes the charts and their totals. Current worktree, branch, and stash observations stay current to the snapshot.</p></div><div><h3>Pending work</h3><p>Ahead / behind comparisons use locally cached upstream refs. Remote branches shown here are cached refs too; the dashboard does not fetch, push, or merge. Branch integration is an ancestry check against the selected ref. Squash or rebase merges, cherry-picks, and PR state need separate interpretation.</p><p>Worktree LOC shows the tracked HEAD-to-working-tree delta. Staged and unstaged counts are separate and are not added together. Untracked files are listed separately. Branch-tip age and first observation time are clues for review, not proof that work was forgotten.</p></div></div></details>
-  <footer class="footer"><span>Local checkouts read-only · Public downloads use dashboard-owned cache</span><span id="footer-observation"></span></footer>
+  <footer class="footer"><span>Local checkouts read-only · GitHub history uses dashboard-owned cache</span><span id="footer-observation"></span></footer>
 <p id="repository-message" class="success-note" role="status"></p>
 <dialog id="add-dialog" aria-labelledby="add-title"><form id="add-form"><h2 id="add-title">Add a repository</h2><p id="add-help">Add a public GitHub repository by URL. Published default-branch history is downloaded into the dashboard cache; local work is not observed.</p><label for="add-source">Repository source</label><select id="add-source"><option value="public">Public GitHub repository</option><option value="local">Local checkout</option></select><label id="add-path-label" for="add-path">Public GitHub URL</label><input id="add-path" name="path" required maxlength="4096" placeholder="https://github.com/owner/repository" autocomplete="off"><label for="add-name">Display name <span class="muted">(optional)</span></label><input id="add-name" name="name" maxlength="160" autocomplete="off"><label for="add-product">Product <span class="muted">(optional)</span></label><input id="add-product" name="product" maxlength="160" autocomplete="off"><p id="add-status" role="alert"></p><div class="dialog-actions"><button id="add-cancel" type="button">Cancel</button><button id="add-submit" type="submit">Add repository</button></div></form></dialog>
+<dialog id="github-dialog" aria-labelledby="github-title" aria-describedby="github-session-note">
+  <h2 id="github-title" tabindex="-1">GitHub repositories</h2>
+  <p id="github-session-note">Sign-in lasts for this app session. Closing the app or disconnecting forgets credentials; saved repository choices remain.</p>
+  <p id="github-status" role="status"></p><p id="github-error" role="alert"></p>
+  <section id="github-unconfigured" class="github-section" hidden><p>The app publisher needs to configure GitHub sign-in for this copy.</p><a id="github-setup" href="/github-setup" target="_blank" rel="noopener noreferrer">Read the GitHub App setup guide</a></section>
+  <section id="github-signin" class="github-section" hidden><p>Choose which repositories to observe after signing in. Repository contents stay read-only.</p><div class="github-toolbar"><button id="github-start" type="button">Sign in with GitHub</button></div></section>
+  <section id="github-pending" class="github-section" hidden><p>Enter this code on GitHub, then return here.</p><code id="github-code" class="github-code" aria-label="GitHub device code"></code><a id="github-verify" target="_blank" rel="noopener noreferrer" hidden>Open GitHub to enter code</a><div class="github-toolbar"><button id="github-cancel" type="button">Cancel sign-in</button></div></section>
+  <section id="github-connected" class="github-section" hidden>
+    <div class="github-toolbar"><p id="github-account"></p><button id="github-disconnect" type="button">Disconnect GitHub</button></div>
+    <p>Published default-branch history only. Local changes, unpublished commits, PRs and CI are not observed.</p>
+    <label for="github-search">Search repositories</label><input id="github-search" type="search" autocomplete="off" placeholder="Filter by owner or repository">
+    <ul id="github-repositories" aria-label="Available GitHub repositories"></ul><p id="github-count" role="status"></p>
+    <a id="github-access" target="_blank" rel="noopener noreferrer" hidden>Configure repository access on GitHub</a>
+    <div class="github-toolbar"><button id="github-refresh" type="button">Refresh list</button><button id="github-import" type="button" disabled>Add selected</button></div>
+    <p id="github-results" role="status"></p>
+  </section>
+  <div class="dialog-actions"><button id="github-close" type="button">Close</button></div>
+</dialog>
 </main>
 <script type="application/json" id="snapshot-data">__GIT_DASHBOARD_DATA__</script>
 <script>
@@ -75,9 +109,9 @@ const asArray=v=>Array.isArray(v)?v:[], string=v=>v===null||v===undefined?'':Str
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=string(text);return n;};
 const svgEl=(tag,attrs={},text)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,string(v));if(text!==undefined)n.textContent=string(text);return n;};
 const badge=(text,cls='')=>el('span','chip '+cls,text);
-let data={},activeTab='worktrees',timer=null,fetching=false,connectionError='',repositoryRevision=0;
+let data={},activeTab='worktrees',timer=null,fetching=false,connectionError='',repositoryRevision=0,githubEpoch=null,githubGeneration=null;
 const removingRepositories=new Set();
-try{data=JSON.parse($('snapshot-data').textContent);}catch(error){connectionError='This file has no readable snapshot. Generate a report with the Python collector.';}
+try{data=JSON.parse($('snapshot-data').textContent);}catch(error){connectionError='This file has no readable snapshot. Generate a report with the Python collector.';}finally{$('snapshot-data').textContent='';}
 function stamp(value){if(!value)return'Unknown';const d=new Date(value);if(!Number.isFinite(+d))return'Unknown';try{return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:data.timezone||'UTC'});}catch{return d.toISOString();}}
 function dayLabel(value,long=false){const d=new Date(value+'T12:00:00Z');return Number.isFinite(+d)?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:long?'numeric':undefined,timeZone:'UTC'}):value;}
 function dateKey(value,zone=data.timezone||'UTC'){const d=new Date(value);if(!Number.isFinite(+d))return'';try{const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),get=key=>parts.find(p=>p.type===key)?.value;return get('year')+'-'+get('month')+'-'+get('day');}catch{return d.toISOString().slice(0,10);}}
@@ -121,7 +155,7 @@ function lineCounts(added,deleted){if(!finite(added)||!finite(deleted))return el
 function mainSecondary(main,secondary,cls=''){const n=el('div');n.append(el('div',cls,main));if(secondary)n.append(el('div','secondary',secondary));return n;}
 function dataTable(hostId,rows){const host=$(hostId);host.replaceChildren();if(!rows.length){host.append(el('p','muted','No measured history for this selection.'));return;}host.append(table(['Period','Commits','Added','Deleted'],rows.map(r=>[dayLabel(r.date,true),num(r.commits),el('span','positive','+'+num(r.added)),el('span','negative','−'+num(r.deleted))])));}
 function renderRepositories(repos,floor){const host=$('repository-table'),active=host.contains(document.activeElement)?document.activeElement:null,focusAttribute=active?.dataset.removePath?'removePath':'repository',focusKey=active?.dataset[focusAttribute];host.replaceChildren();$('repo-count').textContent=repos.length+' selected';if(!repos.length){empty(host,'No repositories selected','Choose a product or repository, or configure a repository path.');if(focusKey)$('repo-select').focus({preventScroll:true});return;}
-  const rows=repos.map(r=>{const title=el('div'),button=el('button','tiny-button repo-title',r.name||r.path);button.type='button';button.dataset.repository=string(r.path||r.id);button.addEventListener('click',()=>{$('repo-select').value=string(r.path||r.id);render();});title.append(button,el('div','secondary mono',r.path));if(data.live&&data.repository_management&&location.protocol!=='file:'&&r.removable===true){const remove=el('button','tiny-button','Remove');remove.type='button';remove.dataset.removePath=string(r.path||r.id);remove.setAttribute('aria-label','Remove '+(r.name||r.path));remove.disabled=removingRepositories.has(remove.dataset.removePath);if(remove.disabled)remove.textContent='Removing…';remove.addEventListener('click',()=>removeRepository(r,remove));const actions=el('div','secondary');actions.append(remove);title.append(actions);}if(r.source_kind==='public')title.append(badge('Public GitHub','blue'));const h=historyReady(r),daily=daysFor(r,floor),local=asArray(r.worktrees),unknown=local.filter(w=>typeof w.dirty!=='boolean').length,dirty=local.filter(w=>w.dirty===true).length,branches=sourceReadable(r,'branches')?asArray(r.branches).filter(b=>finite(b.ahead)):[],workComplete=sourceState(r,'worktrees')==='ok'&&!unknown,status=el('div');status.append(badge(r.status==='ok'?'Observed':r.status==='partial'?'Partial':r.status==='pending'?'Pending':'Unavailable',r.status==='ok'?'good':r.status==='partial'?'warn':r.status==='pending'?'blue':'bad'),el('div','secondary',stamp(r.collected_at)));return[title,mainSecondary(r.ref||'HEAD',r.head?string(r.head).slice(0,9):'No resolved commit','mono'),h?(historyPartial(r)?'≥':'')+num(sum(daily,'commits')):'—',h?lineCounts(sum(daily,'added'),sum(daily,'deleted')):el('span','muted','Unavailable'),r.source_kind==='public'?'Not observed (remote)':!sourceReadable(r,'worktrees')||(!workComplete&&!local.length)?'Unknown':mainSecondary(dirty+' dirty / '+local.length+(workComplete?' total':' captured'),unknown?unknown+' unknown':workComplete?'':'Partial observation'),branches.length?branches.filter(b=>b.ahead>0).length+' branches':'—',status];});host.append(table(['Repository','Selected ref','Commits','Added / deleted','Worktrees','Ahead of upstream','Observation'],rows));if(focusKey)([...host.querySelectorAll('button')].find(node=>node.dataset[focusAttribute]===focusKey)||$('repo-select')).focus({preventScroll:true});}
+  const rows=repos.map(r=>{const title=el('div'),button=el('button','tiny-button repo-title',r.name||r.path);button.type='button';button.dataset.repository=string(r.path||r.id);button.addEventListener('click',()=>{$('repo-select').value=string(r.path||r.id);render();});title.append(button,el('div','secondary mono',r.path));if(data.live&&data.repository_management&&location.protocol!=='file:'&&r.removable===true){const remove=el('button','tiny-button','Remove');remove.type='button';remove.dataset.removePath=string(r.path||r.id);remove.setAttribute('aria-label','Remove '+(r.name||r.path));remove.disabled=removingRepositories.has(remove.dataset.removePath);if(remove.disabled)remove.textContent='Removing…';remove.addEventListener('click',()=>removeRepository(r,remove));const actions=el('div','secondary');actions.append(remove);title.append(actions);}if(r.source_kind==='public')title.append(badge('Public GitHub','blue'));if(r.source_kind==='github'){title.append(badge('GitHub','blue'),badge(r.private?'Private':'Public',r.private?'warn':''));}const h=historyReady(r),daily=daysFor(r,floor),local=asArray(r.worktrees),unknown=local.filter(w=>typeof w.dirty!=='boolean').length,dirty=local.filter(w=>w.dirty===true).length,branches=sourceReadable(r,'branches')?asArray(r.branches).filter(b=>finite(b.ahead)):[],workComplete=sourceState(r,'worktrees')==='ok'&&!unknown,status=el('div');status.append(badge(r.status==='ok'?'Observed':r.status==='partial'?'Partial':r.status==='pending'?'Pending':r.status==='auth_required'?'Sign in required':'Unavailable',r.status==='ok'?'good':r.status==='partial'?'warn':r.status==='pending'?'blue':'bad'),el('div','secondary',stamp(r.collected_at)));return[title,mainSecondary(r.ref||'HEAD',r.head?string(r.head).slice(0,9):'No resolved commit','mono'),h?(historyPartial(r)?'≥':'')+num(sum(daily,'commits')):'—',h?lineCounts(sum(daily,'added'),sum(daily,'deleted')):el('span','muted','Unavailable'),['public','github'].includes(r.source_kind)?'Not observed (remote)':!sourceReadable(r,'worktrees')||(!workComplete&&!local.length)?'Unknown':mainSecondary(dirty+' dirty / '+local.length+(workComplete?' total':' captured'),unknown?unknown+' unknown':workComplete?'':'Partial observation'),branches.length?branches.filter(b=>b.ahead>0).length+' branches':'—',status];});host.append(table(['Repository','Selected ref','Commits','Added / deleted','Worktrees','Ahead of upstream','Observation'],rows));if(focusKey)([...host.querySelectorAll('button')].find(node=>node.dataset[focusAttribute]===focusKey)||$('repo-select')).focus({preventScroll:true});}
 function worktreeState(w){const box=el('div','state-list');if(w.status==='error'||typeof w.dirty!=='boolean')box.append(badge('Unknown','bad'));if(w.status==='partial')box.append(badge('Partial','warn'));for(const [key,label,cls]of [['staged','staged','good'],['unstaged','unstaged','warn'],['untracked','untracked','blue'],['conflicts','conflicts','bad']])if(finite(w[key])&&w[key]>0)box.append(badge(num(w[key])+' '+label,cls));if(w.dirty===false)box.append(badge(w.status==='partial'?'Captured files clean':'Clean',w.status==='partial'?'':'good'));if(w.dirty===true&&!box.childNodes.length)box.append(badge('Changes present','warn'));return box;}
 function fileDetails(w,key){const files=asArray(w.files);if(!files.length)return null;const box=el('details','files');box.dataset.worktree=key;box.append(el('summary','',num(files.length)+' changed paths'));const list=el('ul');for(const f of files.slice(0,100)){const li=el('li');li.append(el('span','',string(f.index||' ')+string(f.worktree||' ')),document.createTextNode(string(f.path)));list.append(li);}if(files.length>100)list.append(el('li','muted','First 100 paths shown; export JSON for the complete captured list.'));box.append(list);return box;}
 function renderWork(repos){const host=$('work-table'),all=$('show-all').checked,opened=new Set([...host.querySelectorAll('details.files[open]')].map(node=>node.dataset.worktree)),focused=host.contains(document.activeElement)?document.activeElement.closest('details.files')?.dataset.worktree:null,scrollTop=host.scrollTop,scrollLeft=host.scrollLeft;host.replaceChildren();host.setAttribute('aria-labelledby','tab-'+activeTab);let rows=[],headers=[],note='',available=true;const source=activeTab==='recent'?'history':activeTab,incomplete=repos.some(r=>sourceState(r,source)!=='ok');
@@ -133,9 +167,37 @@ function renderWork(repos){const host=$('work-table'),all=$('show-all').checked,
   if(focused){const detail=[...host.querySelectorAll('details.files')].find(node=>node.dataset.worktree===focused);(detail?.querySelector('summary')||host).focus({preventScroll:true});}host.scrollTop=scrollTop;host.scrollLeft=scrollLeft;
 }
 function renderCoverage(repos){const items=[];for(const error of asArray(data.errors))items.push(string(typeof error==='object'?error.message||JSON.stringify(error):error));for(const r of repos){for(const source of ['history','worktrees','branches','stashes']){const state=sourceState(r,source);if(state!=='ok')items.push((r.name||r.path)+': '+source+' observation '+(state==='pending'?'is pending':state==='not_requested'?'was not requested':state==='error'?'is unavailable':'is partial')+'.');}for(const e of [...asArray(r.errors),...asArray(r.warnings)])items.push((r.name||r.path)+': '+string(e));if(r.history?.truncated)items.push(r.name+': history reached the collection limit. Chart totals are partial.');if(r.history?.shallow)items.push(r.name+': shallow Git history. Earlier commits may be unavailable.');for(const w of asArray(r.worktrees)){for(const e of asArray(w.errors))items.push((r.name||r.path)+' / '+(w.branch||w.path)+': '+string(e));if(finite(w.observation_gap_seconds)&&w.observation_gap_seconds>Math.max(120,Number(data.refresh_seconds||30)*4))items.push((r.name||r.path)+' / '+(w.branch||w.path)+': '+num(Math.round(w.observation_gap_seconds/60))+' minute gap between observations; elapsed age is not verified inactivity.');}}const unique=[...new Set(items)],host=$('coverage-content');host.replaceChildren();$('coverage-summary').textContent=!repos.length?'Observation coverage · no repositories selected':unique.length?'Observation coverage · '+unique.length+' notes':'Observation coverage · no reported collection errors';if(unique.length){const list=el('ul');for(const item of unique)list.append(el('li','',item));host.append(list);}else host.append(el('p','muted',repos.length?'All configured observations in this selection returned without reported errors. Cached remote refs are still only as current as your local Git data.':'Choose a configured repository to inspect its observation coverage.'));}
-function renderConnection(){const chip=$('connection'),label=$('connection-label'),dot=chip.querySelector('.dot'),age=(Date.now()-Date.parse(data.generated_at))/1000,stale=data.live&&Number.isFinite(age)&&age>Math.max(120,Number(data.refresh_seconds||30)*4);chip.className='chip '+(connectionError?'bad':data.collection_running?'blue':stale?'warn':data.live?'good':'');label.textContent=connectionError?'Collector unavailable':data.collection_running?'Scanning…':stale?'Last snapshot is stale':data.live?'Live · '+(data.refresh_seconds||30)+'s refresh':data.demo?'Demo snapshot':'Saved snapshot';dot.className='dot'+(data.live&&!connectionError&&!stale?' live':'');$('updated').textContent='Observed '+stamp(data.generated_at);$('connection-banner').hidden=!connectionError;$('connection-banner').textContent=connectionError?connectionError+' Showing the last available observation from '+stamp(data.generated_at)+'.':'';$('add-button').hidden=!(data.live&&data.repository_management&&location.protocol!=='file:');$('refresh-button').disabled=fetching||!data.live;$('refresh-button').title=data.live?'Read the latest local collector snapshot':'A saved report is static. Run the Python dashboard for automatic refresh.';}
+function renderConnection(){const chip=$('connection'),label=$('connection-label'),dot=chip.querySelector('.dot'),age=(Date.now()-Date.parse(data.generated_at))/1000,stale=data.live&&Number.isFinite(age)&&age>Math.max(120,Number(data.refresh_seconds||30)*4);chip.className='chip '+(connectionError?'bad':data.collection_running?'blue':stale?'warn':data.live?'good':'');label.textContent=connectionError?'Collector unavailable':data.collection_running?'Scanning…':stale?'Last snapshot is stale':data.live?'Live · '+(data.refresh_seconds||30)+'s refresh':data.demo?'Demo snapshot':'Saved snapshot';dot.className='dot'+(data.live&&!connectionError&&!stale?' live':'');$('updated').textContent='Observed '+stamp(data.generated_at);$('connection-banner').hidden=!connectionError;$('connection-banner').textContent=connectionError?connectionError+' Showing the last available observation from '+stamp(data.generated_at)+'.':'';$('add-button').hidden=!(data.live&&data.repository_management&&location.protocol!=='file:');$('github-button').hidden=$('add-button').hidden;$('refresh-button').disabled=fetching||!data.live;$('refresh-button').title=data.live?'Read the latest local collector snapshot':'A saved report is static. Run the Python dashboard for automatic refresh.';}
 function render(){const repos=selected(),floor=dateFloor(repos),days=aggregate(repos,floor),weeks=weeksFrom(days),ready=repos.filter(historyReady).length,partial=repos.some(historyPartial);$('page-title').textContent=data.title||'Git activity dashboard';$('demo-banner').hidden=!data.demo;$('selection-note').textContent=repos.length+' repositor'+(repos.length===1?'y':'ies')+' selected · '+(days.length?dayLabel(days[0].date)+' – '+dayLabel(days.at(-1).date,true):'History unavailable');$('timezone-note').textContent='Commit dates: '+(data.timezone||'UTC')+' · Current work: latest snapshot';renderMetrics(repos,days);chart('commits-chart',days,'line');chart('frequency-chart',weeks,'bar');$('commits-caption').textContent=ready+'/'+repos.length+' histories available'+(partial?' · partial totals':' · non-merge commits');$('frequency-caption').textContent=partial?'Captured text-line changes · partial totals':'Committed text-line changes · binary LOC excluded';dataTable('daily-data',days);dataTable('weekly-data',weeks);renderRepositories(repos,floor);renderWork(repos);renderCoverage(repos);renderConnection();$('footer-observation').textContent='Snapshot '+stamp(data.generated_at)+' · '+(data.timezone||'UTC');}
-async function refresh(){if(fetching||!data.live)return;fetching=true;renderConnection();const revision=repositoryRevision,controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const response=await fetch('/api/snapshot',{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('The collector returned HTTP '+response.status);const next=await response.json();if(!next||!Array.isArray(next.repositories))throw new Error('The collector returned an invalid snapshot');if(revision!==repositoryRevision)return;data=next;connectionError='';filters();render();}catch(error){if(revision===repositoryRevision){connectionError='Cannot reach the local collector. '+(error.name==='AbortError'?'The request timed out.':error.message);renderConnection();}}finally{clearTimeout(timeout);fetching=false;renderConnection();schedule(revision!==repositoryRevision?0:undefined);}}
+async function refresh(){
+  if(fetching||!data.live)return;fetching=true;renderConnection();
+  let revision=repositoryRevision,reconcileSession=null;
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+  try{
+    const response=await fetch('/api/snapshot',{cache:'no-store',signal:controller.signal});
+    if(!response.ok)throw new Error('The collector returned HTTP '+response.status);
+    const next=await response.json();
+    if(!next||!Array.isArray(next.repositories))throw new Error('The collector returned an invalid snapshot');
+    if(revision!==repositoryRevision)return;
+    if(next.github_session_id&&githubEpoch&&(next.github_session_id!==githubEpoch||next.github_generation!==githubGeneration)){
+      if(next.github_session_id===githubEpoch&&next.github_generation<githubGeneration)return;
+      // Reconcile another tab's auth change or a restarted server before showing metadata.
+      reconcileSession=suspendGithubDialog();
+      const authResponse=await fetch('/api/github/status',{cache:'no-store',signal:controller.signal});
+      if(!authResponse.ok)throw new Error('Could not verify the changed GitHub session');
+      const authStatus=await authResponse.json();
+      if(revision!==repositoryRevision)return;
+      if(reconcileSession===githubSession){applyGithubStatus(authStatus);if(githubCurrent(reconcileSession)&&authStatus.status==='connected')loadGithubRepositories(reconcileSession);scheduleGithub(reconcileSession);}
+      else rememberGithubVersion(authStatus);
+      revision=repositoryRevision;
+      if(next.github_session_id!==githubEpoch||next.github_generation!==githubGeneration)return;
+    }
+    if(next.github_session_id===githubEpoch&&Number.isSafeInteger(next.github_generation)&&githubGeneration!==null&&next.github_generation<githubGeneration)return;
+    if(revision!==repositoryRevision)return;
+    data=next;connectionError='';filters();render();
+  }catch(error){if(revision===repositoryRevision){connectionError='Cannot reach the local collector. '+(error.name==='AbortError'?'The request timed out.':error.message);renderConnection();if(reconcileSession===githubSession&&$('github-dialog').open){githubStatus={status:'error'};$('github-error').textContent='Could not verify the GitHub connection. Retry sign-in or reopen this dialog.';renderGithub();}}}
+  finally{clearTimeout(timeout);fetching=false;renderConnection();schedule(revision!==repositoryRevision?0:undefined);}
+}
 function schedule(delay){clearTimeout(timer);if(data.live)timer=setTimeout(refresh,delay??(data.collection_running?3:Math.max(5,Number(data.refresh_seconds)||30))*1000);}
 async function removeRepository(repo,button){
   const path=string(repo.path||repo.id),name=string(repo.name||path);
@@ -181,8 +243,164 @@ $('add-form').addEventListener('submit',async event=>{
   }catch(error){if(session===addSession&&$('add-dialog').open)$('add-status').textContent=error.message;else $('repository-message').textContent='Could not add '+label+': '+error.message;}
   finally{if(pendingAddSession===session)pendingAddSession=null;if(session===addSession)submit.disabled=false;}
 });
+// Authentication metadata is deliberately separate from `data`, the exportable snapshot.
+let githubSession=0,githubTimer=null,githubStatus=null,githubBusy='',githubListLoaded=false,githubListMessage='';
+let githubRepositories=[],githubSelected=new Set();
+const githubRequests=new Set();
+function githubCurrent(session){return session===githubSession&&$('github-dialog').open;}
+function resetGithubRequests(){githubSession++;clearTimeout(githubTimer);githubTimer=null;for(const controller of githubRequests)controller.abort();githubRequests.clear();githubBusy='';return githubSession;}
+function clearGithubRepositories(){githubRepositories=[];githubSelected.clear();githubListLoaded=false;githubListMessage='';$('github-search').value='';$('github-repositories').replaceChildren();$('github-account').textContent='';$('github-count').textContent='';$('github-results').textContent='';}
+function suspendGithubDialog(){const session=resetGithubRequests();clearGithubRepositories();githubStatus=null;$('github-error').textContent='';$('github-status').textContent='Checking changed GitHub connection…';renderGithub();discardGithubObservations(true);return session;}
+async function githubRequest(action,session,body){
+  const controller=new AbortController();githubRequests.add(controller);
+  const timeout=setTimeout(()=>controller.abort(),45000);
+  try{
+    const response=await fetch('/api/github/'+action,{cache:'no-store',signal:controller.signal,...(body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})});
+    const result=await response.json();
+    if(!githubCurrent(session))return null;
+    if(!response.ok)throw new Error(result.error?.message||'The GitHub request could not be completed.');
+    if(['repositories','import'].includes(action)&&typeof result.github_session_id==='string'&&Number.isSafeInteger(result.github_generation)&&(result.github_session_id!==githubEpoch||result.github_generation!==githubGeneration)){
+      const nextSession=suspendGithubDialog();await readGithubStatus(nextSession,false);if(githubCurrent(nextSession)){if(githubStatus?.status==='connected'){$('github-status').textContent='The GitHub connection changed. Refresh the repository list before choosing repositories.';renderGithubRepositories();}refresh();}return null;
+    }
+    return result;
+  }catch(error){
+    if(!githubCurrent(session))return null;
+    throw new Error(error.name==='AbortError'?'The request timed out. Try again.':error.message);
+  }finally{clearTimeout(timeout);githubRequests.delete(controller);}
+}
+function githubLink(id,value,kind){
+  const node=$(id),valid=kind==='device'?value==='https://github.com/login/device':/^https:\/\/github\.com\/apps\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\/installations\/new$/.test(string(value));
+  node.hidden=!valid;if(valid)node.href=value;else node.removeAttribute('href');
+}
+function renderGithub(){
+  const status=githubStatus?.status,active=$('github-dialog').contains(document.activeElement)?document.activeElement:null;
+  $('github-unconfigured').hidden=status!=='unconfigured';$('github-signin').hidden=!['disconnected','error'].includes(status);
+  $('github-pending').hidden=status!=='pending';$('github-connected').hidden=status!=='connected';
+  $('github-start').textContent=status==='error'?'Retry sign-in':'Sign in with GitHub';
+  $('github-start').disabled=Boolean(githubBusy);$('github-cancel').disabled=Boolean(githubBusy)&&githubBusy!=='list';
+  $('github-disconnect').disabled=['disconnect','import'].includes(githubBusy);
+  $('github-refresh').disabled=Boolean(githubBusy);$('github-search').disabled=githubBusy==='import';
+  $('github-import').disabled=Boolean(githubBusy)||!githubSelected.size;
+  $('github-import').textContent=githubBusy==='import'?'Adding selected…':'Add selected';
+  $('github-code').textContent=githubStatus?.user_code||'Preparing code…';
+  githubLink('github-verify',status==='pending'&&githubStatus?.user_code?githubStatus.verification_uri:null,'device');
+  githubLink('github-access',status==='connected'?githubStatus?.installation_url:null,'installation');
+  $('github-account').textContent=status==='connected'?'Connected as '+(githubStatus?.user?.login||'GitHub user'):'';
+  $('github-button').textContent=status==='connected'?'GitHub repositories':'Connect GitHub';
+  if($('github-dialog').open&&active&&(active.disabled||!active.getClientRects().length))$('github-title').focus({preventScroll:true});
+}
+function renderGithubRepositories(){
+  const host=$('github-repositories'),focused=host.contains(document.activeElement)?document.activeElement.dataset.githubId:null,scrollTop=host.scrollTop;
+  const query=$('github-search').value.trim().toLocaleLowerCase(),visible=githubRepositories.filter(repo=>repo.full_name.toLocaleLowerCase().includes(query));
+  host.replaceChildren();
+  for(const repo of visible){
+    const row=el('li','github-repository'),label=el('label'),input=el('input'),copy=el('span','github-repository-copy');
+    input.type='checkbox';input.dataset.githubId=String(repo.id);input.checked=githubSelected.has(repo.id);input.disabled=Boolean(githubBusy);
+    input.addEventListener('change',()=>{
+      if(input.checked&&githubSelected.size>=50){input.checked=false;$('github-error').textContent='Choose up to 50 repositories at a time.';return;}
+      input.checked?githubSelected.add(repo.id):githubSelected.delete(repo.id);$('github-error').textContent='';renderGithub();updateGithubCount(visible.length);
+    });
+    copy.append(el('span','github-repository-name',repo.full_name),badge(repo.private?'Private':'Public',repo.private?'warn':'blue'));
+    if(repo.archived)copy.append(badge('Archived'));
+    label.append(input,copy);row.append(label);host.append(row);
+  }
+  updateGithubCount(visible.length);
+  if(focused)([...host.querySelectorAll('input')].find(node=>node.dataset.githubId===focused)||$('github-search')).focus({preventScroll:true});
+  host.scrollTop=scrollTop;
+}
+function updateGithubCount(visibleCount){
+  $('github-count').textContent=githubBusy==='list'?'Loading repositories…':(githubListLoaded?(githubRepositories.length?visibleCount+' of '+githubRepositories.length+' repositories shown. '+githubSelected.size+' selected (up to 50).':'No repositories available to this sign-in.'):'Repository list has not loaded.')+(githubListMessage?' '+githubListMessage:'');
+}
+function rememberGithubVersion(status){
+  if(typeof status.github_session_id!=='string'||!Number.isSafeInteger(status.generation))return;
+  const changed=githubEpoch!==status.github_session_id||githubGeneration!==status.generation;
+  githubEpoch=status.github_session_id;githubGeneration=status.generation;
+  if(!changed)return;
+  repositoryRevision++;
+  if(data.github_session_id===githubEpoch&&data.github_generation===githubGeneration)return;
+  data.github_session_id=githubEpoch;data.github_generation=githubGeneration;
+  discardGithubObservations(status.status==='connected');
+}
+function discardGithubObservations(pending){
+  // Retain configured choices, but discard observations tied to another auth session.
+  data.repositories=asArray(data.repositories).map(repo=>repo.source_kind!=='github'?repo:{...repo,history:null,head:null,collected_at:null,worktrees:[],branches:[],remote_branches:[],stashes:[],status:pending?'pending':'auth_required',authentication_required:!pending,source_status:{history:pending?'pending':'error',worktrees:'not_requested',branches:'not_requested',stashes:'not_requested'},errors:pending?[]:['Sign in to GitHub to observe this repository.'],warnings:[]});
+  filters();render();
+}
+function applyGithubStatus(result){
+  if(!['unconfigured','disconnected','pending','connected','error'].includes(result.status))throw new Error('The app returned an invalid GitHub status.');
+  rememberGithubVersion(result);
+  githubStatus={status:result.status,user:result.user?{id:result.user.id,login:string(result.user.login)}:null,user_code:result.status==='pending'?string(result.user_code):'',verification_uri:result.verification_uri,installation_url:result.installation_url};
+  if(result.status!=='connected')clearGithubRepositories();
+  $('github-error').textContent=result.status==='error'?string(result.message):'';
+  $('github-status').textContent=result.status==='error'?'Sign-in needs attention.':string(result.message)||(result.status==='pending'?'Waiting for authorization on GitHub.':result.status==='connected'?'Choose the repositories you want to add.':result.status==='disconnected'?'Sign in to discover repositories you can access.':'GitHub sign-in is not configured.');
+  renderGithub();
+}
+function scheduleGithub(session){clearTimeout(githubTimer);if(githubCurrent(session)&&githubStatus?.status==='pending')githubTimer=setTimeout(()=>readGithubStatus(session),2000);}
+async function readGithubStatus(session,discover=true){
+  try{
+    const result=await githubRequest('status',session);if(!result)return;
+    applyGithubStatus(result);
+    if(discover&&result.status==='connected'&&!githubListLoaded&&!githubBusy)await loadGithubRepositories(session);
+  }catch(error){if(githubCurrent(session)){$('github-error').textContent=error.message;if(!githubStatus){githubStatus={status:'error'};renderGithub();}}}
+  finally{scheduleGithub(session);}
+}
+async function loadGithubRepositories(session=githubSession){
+  if(!githubCurrent(session)||githubStatus?.status!=='connected'||githubBusy)return;
+  githubBusy='list';$('github-error').textContent='';renderGithub();renderGithubRepositories();
+  try{
+    const result=await githubRequest('repositories',session,{});if(!result)return;
+    githubRepositories=asArray(result.repositories).filter(repo=>Number.isSafeInteger(repo.id)&&repo.id>0&&typeof repo.full_name==='string').map(repo=>({id:repo.id,full_name:repo.full_name,private:repo.private===true,archived:repo.archived===true}));
+    const available=new Set(githubRepositories.map(repo=>repo.id));githubSelected=new Set([...githubSelected].filter(id=>available.has(id)));githubListLoaded=true;
+    githubListMessage=(result.truncated?'This list is partial. ':'')+string(result.message);
+  }catch(error){if(githubCurrent(session))$('github-error').textContent=error.message;}
+  finally{if(githubCurrent(session)){githubBusy='';renderGithub();renderGithubRepositories();}}
+}
+async function githubAuthAction(action){
+  const session=resetGithubRequests();githubBusy=action;$('github-error').textContent='';
+  if(action==='disconnect'||action==='cancel'){clearGithubRepositories();githubStatus={status:'disconnected'};renderGithub();$('github-status').textContent=action==='disconnect'?'Disconnecting GitHub…':'Cancelling sign-in…';}
+  else{$('github-status').textContent='Starting GitHub sign-in…';renderGithub();}
+  try{
+    const result=await githubRequest(action,session,{});if(!result)return;
+    githubBusy='';applyGithubStatus(result);
+    if(action==='disconnect'){repositoryRevision++;$('repository-message').textContent='GitHub disconnected. Saved repository choices remain; private history requires sign-in.';await refresh();}
+    if(result.status==='connected')await loadGithubRepositories(session);
+  }catch(error){if(githubCurrent(session)){githubStatus={status:'error'};$('github-error').textContent=error.message;$('github-status').textContent=action==='disconnect'?'Disconnect could not be confirmed. Reopen this dialog to check the connection.':'Sign-in could not be completed.';}}
+  finally{if(githubCurrent(session)){githubBusy='';renderGithub();scheduleGithub(session);}}
+}
+function closeGithub(){
+  if(githubBusy==='import'){$('repository-message').textContent='Import was requested. Closing this dialog does not undo saved choices; refresh the overview to check them.';repositoryRevision++;refresh();}
+  resetGithubRequests();clearGithubRepositories();githubStatus=null;$('github-dialog').close();$('github-button').focus({preventScroll:true});
+}
+$('github-button').addEventListener('click',()=>{const session=resetGithubRequests();clearGithubRepositories();githubStatus=null;$('github-error').textContent='';$('github-status').textContent='Checking GitHub connection…';renderGithub();$('github-dialog').showModal();$('github-title').focus();readGithubStatus(session);});
+$('github-close').addEventListener('click',closeGithub);
+$('github-dialog').addEventListener('cancel',event=>{event.preventDefault();closeGithub();});
+$('github-dialog').addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const controls=[...$('github-dialog').querySelectorAll('button,input,a[href]')].filter(node=>!node.disabled&&node.getClientRects().length),first=controls[0],last=controls.at(-1);
+  if(event.shiftKey&&(document.activeElement===first||document.activeElement===$('github-title'))){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+});
+$('github-start').addEventListener('click',()=>githubAuthAction('start'));
+$('github-cancel').addEventListener('click',()=>githubAuthAction('cancel'));
+$('github-disconnect').addEventListener('click',()=>githubAuthAction('disconnect'));
+$('github-refresh').addEventListener('click',()=>loadGithubRepositories());
+$('github-search').addEventListener('input',renderGithubRepositories);
+$('github-import').addEventListener('click',async()=>{
+  if(githubBusy||!githubSelected.size)return;
+  const session=githubSession,ids=[...githubSelected],names=new Map(githubRepositories.map(repo=>[repo.id,repo.full_name]));
+  githubBusy='import';$('github-error').textContent='';$('github-results').textContent='Adding selected repositories…';renderGithub();renderGithubRepositories();
+  try{
+    const result=await githubRequest('import',session,{repository_ids:ids});if(!result)return;
+    const imported=asArray(result.imported),existing=asArray(result.already_configured),failed=asArray(result.failed);
+    for(const repo of [...imported,...existing])githubSelected.delete(repo.id);
+    $('github-results').textContent=imported.length+' added · '+existing.length+' already configured · '+failed.length+' failed.'+(failed.length?'\n'+failed.map(repo=>(names.get(repo.id)||'Repository')+': '+string(repo.message||'Could not add this repository.')).join('\n'):'')+(imported.length?' Observation is queued.':'');
+    if(imported.length){repositoryRevision++;$('repository-message').textContent=imported.length+' GitHub repositor'+(imported.length===1?'y':'ies')+' added. Observation is queued.';await refresh();}
+  }catch(error){if(githubCurrent(session)){$('github-error').textContent=error.message;$('github-results').textContent='Import could not be confirmed. Saved choices may still have changed; refresh the overview or retry selected repositories.';}}
+  finally{if(githubCurrent(session)){githubBusy='';renderGithub();renderGithubRepositories();}}
+});
 /* Native WebGL contour field; capped rendering and static accessible fallback. */
 (function(){const canvas=$('topo-canvas'),gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,powerPreference:'low-power',failIfMajorPerformanceCaveat:true});if(!gl){canvas.hidden=true;return;}let renderer=string(gl.getParameter(gl.RENDERER));if(renderer==='WebKit WebGL'){const info=gl.getExtension('WEBGL_debug_renderer_info');if(info)renderer=string(gl.getParameter(info.UNMASKED_RENDERER_WEBGL));}if(/SwiftShader|llvmpipe|softpipe|software rasterizer|Microsoft Basic Render Driver/i.test(renderer)){canvas.hidden=true;gl.getExtension('WEBGL_lose_context')?.loseContext();return;}const reduced=matchMedia('(prefers-reduced-motion: reduce)');const vertex='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';const fragment='precision mediump float;uniform vec2 r;uniform float t;void main(){vec2 p=gl_FragCoord.xy/r.y;float n=sin(p.x*3.+sin(p.y*2.+t*.025))+cos(p.y*3.-p.x*.6+t*.02)+sin(p.x*1.7+p.y*2.4);float v=abs(fract(n*3.)-.5);float contour=1.-smoothstep(.015,.045,v);vec2 g=fract(gl_FragCoord.xy/48.);float grid=step(.985,g.x)+step(.985,g.y);vec3 c=vec3(.008,.015,.025)+vec3(.12,.27,.23)*contour+vec3(.025,.045,.05)*grid;gl_FragColor=vec4(c,1.);}';function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return gl.getShaderParameter(s,gl.COMPILE_STATUS)?s:null;}const vs=shader(gl.VERTEX_SHADER,vertex),fs=shader(gl.FRAGMENT_SHADER,fragment);if(!vs||!fs)return;const program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))return;gl.useProgram(program);const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);const loc=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);const resolution=gl.getUniformLocation(program,'r'),time=gl.getUniformLocation(program,'t');let frame=0,last=0;function draw(now){if(document.hidden)return;if(now-last>=33||!last){last=now;gl.uniform1f(time,reduced.matches?0:now*.001);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);}if(!reduced.matches)frame=requestAnimationFrame(draw);}function start(){cancelAnimationFrame(frame);last=0;const d=Math.min(devicePixelRatio||1,1.5,Math.sqrt(2000000/(innerWidth*innerHeight)));canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);gl.viewport(0,0,canvas.width,canvas.height);gl.uniform2f(resolution,canvas.width,canvas.height);draw(performance.now());}addEventListener('resize',start);document.addEventListener('visibilitychange',start);reduced.addEventListener('change',start);canvas.addEventListener('webglcontextlost',()=>{cancelAnimationFrame(frame);canvas.hidden=true;});start();})();
+if(typeof data.github_session_id==='string'&&Number.isSafeInteger(data.github_generation)){githubEpoch=data.github_session_id;githubGeneration=data.github_generation;}
 filters();render();schedule();if(data.live)setInterval(renderConnection,10000);
 </script>
 </body>
