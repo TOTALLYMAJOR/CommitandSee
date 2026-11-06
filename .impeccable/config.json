@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "all-caps-body",
+        "value": "*",
+        "files": [
+          "dashboard.html"
+        ],
+        "createdAt": "2026-11-06T06:30:39.109Z",
+        "reason": "Agent review: the only uppercase selector is .eyebrow, a 42-character product label above the title (Python + Git · Local & GitHub repositories), not body prose. Existing approved dashboard direction is preserved."
+      }
+    ]
+  }
+}
