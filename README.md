@@ -1,6 +1,7 @@
 <div align="center">
-<div align="center">
+
 <img width="1280" height="640" alt="social-preview" src="https://github.com/user-attachments/assets/135ef777-dcdb-4661-b20f-12f177a5af85" />
+
 # CommitandSee
 
 ### See the work GitHub can't see.
