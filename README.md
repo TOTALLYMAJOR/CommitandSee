@@ -4,61 +4,153 @@
 
 ### See the work GitHub can't see.
 
-**A local-first Git dashboard that reveals unfinished work across repositories, branches, worktrees, and stashes.**
+A local-first Git dashboard for uncommitted changes, unpublished branches,
+linked worktrees, stashes, and commit history across your repositories.
 
-Python 3.11+ · Git 2.37+ · No third-party Python packages · Local-first · Read-only observation
+**[Download for Windows x64 — portable ZIP](https://github.com/TOTALLYMAJOR/CommitandSee/releases/download/v0.2.0-rc.1/CommitandSee-0.2.0-rc.1-Windows-x64-929746ee8170.zip)**
 
-[Try it in 3 commands](#quick-start) · [See the dashboard](#the-dashboard) · [What it catches](#what-commitandsee-finds) · [GitHub comparison](#why-not-just-github) · [Full documentation](#add-a-repository-from-the-dashboard)
+**v0.2.0-rc.1 prerelease · Python included · Git required · MIT license**
+
+[Get started](#get-started-on-windows) · [Add repositories](#add-and-remove-repositories) · [Stop or restart](#stop-restart-and-update) · [Run from source](#run-from-source) · [Troubleshooting](#troubleshooting)
 
 </div>
 
-![CommitandSee dashboard: local portfolio view while collecting repository evidence](docs/images/dashboard-live.png)
+## Get started on Windows
 
-*Real local dashboard capture. Pending sources and partial totals stay visible; remote comparisons use cached information.*
+1. Install [Git for Windows](https://git-scm.com/install/windows) if you do not already
+   have it. Git 2.37 or newer must be available to the app; **you do not need to
+   install Python** for the portable ZIP.
+2. Download the ZIP above and choose **Extract All**. Keep the extracted folder
+   together, including its `_internal` directory. Do not run the app inside the ZIP.
+3. Open **`CommitandSee.exe`**. A console opens, followed by the dashboard in your
+   default browser. Keep the console open while using the app.
+4. Choose **Add repository → Local checkout**, paste the absolute path to an
+   existing Git checkout, and choose **Add repository**. For example:
+   `C:\Users\you\projects\my-app`.
 
-## The problem
+The first launch starts with an empty repository list. It does not search your
+computer automatically. For a public GitHub project, leave the source set to
+**Public GitHub repository** and paste its URL instead.
 
-You made progress today. But where is it?
+The launcher selects an available local port. If no browser tab opens, copy the
+**Dashboard URL** printed in the console. That URL can change after a restart.
 
-Maybe the code is **uncommitted in another worktree**, **committed but not pushed**, **sitting on an unmerged branch**, or **hidden in a stash**. GitHub shows what was published; it cannot directly inspect your local checkout. A product spanning multiple repositories makes that blind spot worse.
+This is an **unsigned Windows x64 prerelease**, tested on Windows 11. The native
+process-control path requires Windows 10 / Server 2016 or newer; clean-machine
+compatibility and SmartScreen reputation have not been qualified. There is no
+signed installer, background service, or automatic updater. See the
+[release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.2.0-rc.1)
+for the ZIP, checksum, build information, and verification limits.
 
-**CommitandSee puts local working state and committed history in one view**, so you can see what's moving and what deserves review. It does not change your repositories.
+## What you can see
 
-## The dashboard
+![CommitandSee dashboard showing repository metrics and commit-history charts](docs/images/dashboard-live.png)
 
-- **Momentum:** daily commits, weekly additions/deletions, filters by product and repository, selectable history windows.
-- **Loose ends:** staged, unstaged, untracked, and conflicted paths; linked worktrees; local branches ahead of cached upstreams; stashes; ancestry-based unmerged candidates.
-- **Evidence, not guesswork:** observation timestamps, missing data, shallow/truncated history, and source errors remain visible.
-- **Multiple repositories:** group separate Git repositories into one product-level view.
+*Earlier local capture during collection. Pending sources and partial totals
+remain visible; upstream comparisons use locally cached Git information.*
 
-![Add repository dialog for local checkouts and public GitHub repositories](docs/images/add-repository.png)
+| Your question | What the dashboard shows |
+| --- | --- |
+| What changed today? | Commit activity and lines added/deleted over time |
+| What have I not committed? | Staged, unstaged, untracked, and conflicted paths |
+| Where did I leave work? | Linked worktrees, local branches, and stashes |
+| What might not be pushed? | Branches ahead of their locally cached upstream refs |
+| What might not be merged? | Git ancestry against your selected comparison ref |
+| How complete is this picture? | Observation times, pending sources, failures, and partial history |
 
-*Screenshot of the repository-add flow on a narrow viewport.*
+Filter by repository, product, and history window. Expand a worktree's changed
+paths to investigate it in your editor. **Export JSON** saves the complete current
+snapshot, including repositories outside the active filters. Line counts describe changes; they are not a productivity
+or completion score.
 
-## Portable Windows app
+GitHub remains the source for hosted pull requests, reviews, checks, and releases.
+CommitandSee adds visibility into work that has not reached GitHub. It does not
+stage, commit, push, merge, reset, or delete your repository work.
 
-The Windows portable bundle includes Python. Install Git for Windows, extract
-**the whole ZIP**, and open `CommitandSee.exe`; the dashboard opens in your default
-browser. Use **Add repository** to choose a local checkout or a public GitHub URL.
-See [release notes](RELEASE-NOTES.md) for candidate status and
-[GitHub Releases](https://github.com/TOTALLYMAJOR/CommitandSee/releases) for
-published download assets.
+Want to explore before setting up repositories? Download the source from the
+[release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.2.0-rc.1)
+and open [`demo.html`](demo.html) locally. Its data is clearly labeled synthetic.
 
-Keep the launcher console open while using the dashboard; press **Ctrl+C** there
-to stop it. Closing the browser tab does not stop collection. Settings, registry,
-observations, and public caches are stored under `%LOCALAPPDATA%\CommitandSee`,
-separate from the extracted app. To update, stop the app and replace its complete
-extracted folder; your saved data remains. Stop all instances before backing up
-or moving the configuration and its registry together.
+## Add and remove repositories
 
-This is a Windows-specific, unsigned portable build, with no installed background
-service or automatic updater. The Git prerequisite and platform-specific build
-are intentional. [Packaging instructions](packaging/README.md) explain how to
-build it; the Python source quick start below remains available.
+The portable app supports saved additions and removals immediately. The source
+server needs a `--config` file to save these actions; see [source setup](#run-from-source).
 
-## Quick start
+| Source | Enter | What it can observe |
+| --- | --- | --- |
+| **Local checkout** | Existing absolute path, such as `C:\Users\you\projects\app` or `/home/you/projects/app` | Local history, working files, branches, linked worktrees, and stashes |
+| **Public GitHub repository** | `https://github.com/owner/repository` | Published default-branch history downloaded anonymously into an app-owned bare cache |
 
-Install **Python 3.11+** and **Git 2.37+**. Then run:
+**Add repository** defaults to the public GitHub option. Choose **Local checkout**
+for a folder already on your computer. You can supply a display name and product
+label. Registered linked worktrees are included automatically; duplicate paths
+sharing the same Git common directory are rejected.
+
+![Repository source choices in the Add repository dialog](docs/images/add-repository.png)
+
+To stop monitoring a repository, choose **Remove** in its table row and confirm
+its name. This removes it from the dashboard and survives a restart. **It does
+not delete checkout files, Git history, observation history, or downloaded public
+caches.** You can add it again later. Removing a combined row removes its saved
+linked-worktree aliases together. On a narrow screen, scroll the repository table
+horizontally to reach its actions.
+
+Private GitHub repositories and other remote hosts need a local checkout; there
+is no GitHub sign-in or private-repository import. Local observation works offline.
+Public sources require Internet access and cannot reveal local changes, stashes,
+unpublished commits, PR status, or CI results.
+
+New sources appear as pending while collection runs. Large repositories and
+Windows-mounted WSL checkouts can take longer than the refresh interval. Pending
+or failed observations remain unknown; they do not mean zero activity.
+
+## Stop, restart, and update
+
+| Task | Portable Windows app | Source server |
+| --- | --- | --- |
+| **Reopen the dashboard tab** | Copy the running console's **Dashboard URL** into your browser | Open the URL printed by the server; the default is `http://127.0.0.1:8765` |
+| **Stop collection** | Press **Ctrl+C** in the launcher console | Press **Ctrl+C** in the terminal running the server |
+| **Restart** | Stop the app, then open the same `CommitandSee.exe` again | Stop the server, then rerun your original command with the same config and state paths |
+| **Update** | Stop all instances. Extract the new ZIP into a separate folder and run its EXE; keep the entire folder together | Stop the server, update your source checkout, then rerun the same command |
+
+Closing the browser tab does **not** stop collection. The app must remain running
+and your computer awake to observe work. Restart after editing configuration
+outside the dashboard. No scheduler or Windows service is installed.
+
+## Where your data lives
+
+The portable app uses **`%LOCALAPPDATA%\CommitandSee`**, outside its extracted
+program folder. Paste that path into File Explorer's address bar.
+
+| Item | Purpose |
+| --- | --- |
+| `config.json` | Base settings and any manually configured repositories |
+| `config.json.registry.sqlite3` | Saved dashboard additions and removal overrides; created on the first add/remove |
+| `observations.json` | Observation timing used to track dirty-work ages and gaps |
+| `public-repositories` | Downloaded public Git history; removing a source does not erase this cache |
+
+**Back up:** stop every instance, then copy the data folder. When moving an
+existing configuration, keep its JSON and registry together. The dashboard leaves
+the base JSON unchanged; the registry overrides it. A base entry removed in the UI
+stays removed after external JSON edits until added again through the dashboard.
+
+**Update:** replace the program folder, not the data folder. Existing source-CLI
+settings are not imported automatically into the portable app. Advanced users can
+launch `CommitandSee.exe --config "C:\path\config.json" --state "C:\path\observations.json"`
+to use existing files. Keep configuration, state, registry, and report outputs
+outside monitored checkouts and registered linked worktrees, and use distinct
+config and state paths.
+
+The source CLI defaults observation state to
+`~/.git-activity-dashboard/observations.json`; public caches sit beside that file.
+`--state` overrides the state path. Paths, branch names, commit metadata, and
+exports can contain private project information, even though file contents and
+patches are not retained.
+
+## Run from source
+
+Use **Python 3.11+** and **Git 2.37+**. The source app needs no third-party Python
+packages, Node installation, or frontend build step.
 
 ```bash
 git clone https://github.com/TOTALLYMAJOR/CommitandSee.git
@@ -66,262 +158,131 @@ cd CommitandSee
 python3 git_dashboard.py serve --repo /absolute/path/to/your/project
 ```
 
-Open **http://127.0.0.1:8765** in your browser. Local observations refresh every 30 seconds by default while the server is running. Stop with **Ctrl+C**.
+Open **http://127.0.0.1:8765**. Replace the example path with your checkout.
+On native Windows, use `py -3` in place of `python3`; use Python and Git inside
+WSL for WSL repositories. The observer expects paths for the environment where it
+runs: for example `/mnt/c/Users/...` when using a Windows checkout from WSL.
 
-**Want to see the interface without configuring Git?** Open [demo.html](demo.html) from the repository. It is a static, synthetic sample—not live repository data.
+The `--repo` launch command controls the repository list. It **cannot save UI
+additions/removals**; repeat `--repo` to monitor more checkouts, or use a config file.
 
-**Need multiple projects?** Repeat `--repo` for each local checkout, or use [config.example.json](config.example.json) to group repositories by product. The dashboard can also add public GitHub repository URLs when launched with an external configuration file; public-source history is downloaded into a separate bare cache, not into your worktrees.
+### Enable saved repository controls
 
-## What CommitandSee finds
-
-| Question | Evidence surfaced |
-| --- | --- |
-| What did I work on? | Commit history, changed-line trends, and repository/product breakdowns |
-| What work isn't committed? | Staged, unstaged, untracked, and conflicted working-tree paths |
-| What did I leave elsewhere? | Linked worktree state, stashes, and reviewable branches |
-| What might not be published? | Branches ahead of **locally cached** upstream refs |
-| What might not be merged? | Git ancestry relative to the selected ref (not GitHub PR status) |
-| How trustworthy is the view? | Partial collection, stale comparisons, missing refs, and observation warnings |
-
-## Why not just GitHub?
-
-| GitHub | CommitandSee |
-| --- | --- |
-| Strong source of truth for pushed commits, pull requests, reviews, checks, and releases | Local-first visibility into *uncommitted* files, unpublished branches, worktrees, and stashes |
-| Repository-centered collaboration and hosting | One dashboard for several local repositories that collectively make up a product |
-| Cannot directly see the state of your local working directories | Observes local Git state without staging, committing, pushing, or merging |
-| Current hosted PR/CI information | Git history and cached upstream comparisons; **does not claim live PR/CI status** |
-
-**Complement GitHub, don't replace it.** For collaboration, checks, and authoritative remote state, use GitHub. For the work that hasn't reached GitHub, use CommitandSee.
-
-## What it deliberately does not do
-
-It does **not** push code, merge branches, stage files, run arbitrary project code, report live PR/CI status, or equate line counts with productivity. Cached upstreams may be stale; absent upstreams are unknown, not proof that code was never pushed. Public repository sources cannot expose someone else's local working state. See [verification and limitations](VERIFICATION.md).
-
-## Who it's for
-
-Solo developers, maintainers, AI-assisted builders, and small teams coordinating products that span multiple Git repositories. If you've ever asked “what did I change, and where did I leave it?”, this is for you.
-
-**If CommitandSee solves a problem you recognize, [star the repository](https://github.com/TOTALLYMAJOR/CommitandSee) to help other developers discover it.** For bugs or concrete improvements, [open an issue](https://github.com/TOTALLYMAJOR/CommitandSee/issues). Stars are appreciated, not required to use the tool.
-
----
-
-## Detailed usage
-
-## Add a repository from the dashboard
-
-Run with a configuration file stored **outside monitored repositories**:
-
-```bash
-mkdir -p ~/.config/work-visibility
-cp config.example.json ~/.config/work-visibility/config.json
-# Set the initial repository paths in that file, then start:
-python3 git_dashboard.py serve --config ~/.config/work-visibility/config.json
-```
-
-Click **Add repository** and choose a source:
-
-- **Public GitHub repository:** paste `https://github.com/owner/repository`.
-  The dashboard checks anonymous access and downloads default-branch history
-  into its own bare Git cache. No local checkout is required.
-- **Local checkout:** enter an existing absolute checkout path to observe local
-  working files, branches, linked worktrees, and stashes.
-
-Optionally choose a display name and product. The dashboard validates Git
-identity, saves the source in a companion registry, and queues observation. Registered linked
-worktrees are included automatically; duplicate checkouts sharing the same Git
-common directory are rejected. Use WSL paths such as `/mnt/c/Users/...` for Windows
-checkouts when the observer runs in WSL.
-
-Local checkout observation does not modify checkout files or fetch refs. Public
-repository collection fetches into `public-repositories` beside the observation
-state file (by default `~/.git-activity-dashboard/public-repositories`). It uses
-anonymous HTTPS, disables hooks and inherited Git credentials/configuration, and
-never checks out or executes public repository files. Public history refreshes
-at `history_refresh_seconds` (minimum 60 seconds), and is bounded to a 2,000-commit
-depth and the existing per-command timeout. Shallow/truncated totals remain partial.
-Large repositories can consume disk/network bandwidth or exceed the timeout.
-GitHub rate limits and unavailable repositories produce explicit errors.
-
-Public sources do not reveal local working files, stashes, unpublished commits,
-PR status, or CI. Their local-work counts remain unknown. Independently configured
-local and public sources can overlap in commit history; aggregate counts are per
-configured source, not unique portfolio commits. Public GitHub HTTPS URLs are the
-supported remote type; private repositories and other hosts still need a local checkout. It is available on the loopback live server
-started with `--config`; static exports and `--repo` sessions cannot save additions.
-If configuration changes outside the dashboard, restart before adding another repo.
-
-The page opens immediately with pending rows while the first scan runs. Results
-arrive repository by repository. Large portfolios and Windows-mounted checkouts
-can take longer than the configured refresh interval; refresh is a target cadence,
-not a freshness guarantee.
-
-![Add repository dialog with public GitHub and local checkout choices](docs/images/add-repository.png)
-
-*Actual 390px browser capture of the insertion dialog.*
-
-## Remove a repository from the dashboard
-
-In the repository table, choose **Remove** and confirm the named repository.
-The dashboard records a removal in its companion registry and stops showing
-observations for that source, including results from a scan already in progress. Checkout files,
-Git history, observation history, and downloaded public caches remain on disk.
-You can add the repository again later.
-
-Removal is available for sources managed by the `--config` session. Sources also
-supplied with `--repo` must be removed from the launch command; static reports
-cannot change the registry. If several configured paths represent the same Git
-repository, removing their combined row removes those saved aliases together.
-External configuration edits require a restart before adding or removing sources.
-
-Dashboard actions leave the JSON configuration unchanged. On the first add or
-remove, the app creates `<config filename>.registry.sqlite3` beside it. Keep both
-files outside every monitored checkout and registered linked worktree, and back
-up or move them together while all observers are stopped. The JSON remains the
-base configuration; the registry stores additions and removal overrides. A base
-entry removed through the dashboard stays removed after external JSON edits
-until you add it again through the dashboard. Existing configurations need no
-migration, and startup alone creates no registry.
-
-## Bring your repositories together
-
-Pass `--repo` more than once:
-
-```bash
-python3 git_dashboard.py serve \
-  --repo ~/projects/frontend \
-  --repo ~/projects/api \
-  --repo ~/projects/shared-library
-```
-
-For named products, labels, and explicit comparison refs, create a `config.json`:
+Create a JSON file outside your checkouts, for example
+`~/.config/commitandsee/config.json`, with an empty list:
 
 ```json
 {
-  "title": "My development workspace",
+  "title": "My workspace",
   "timezone": "America/Chicago",
-  "days": 180,
-  "refresh_seconds": 30,
-  "repositories": [
-    {"name": "Frontend", "product": "My product", "path": "../frontend", "ref": "main"},
-    {"name": "API", "product": "My product", "path": "../api", "ref": "main"},
-    {"name": "Weekend project", "product": "Personal", "path": "../weekend-project", "ref": "HEAD"}
-  ]
+  "repositories": []
 }
 ```
 
 ```bash
-python3 git_dashboard.py serve --config config.json
+python3 git_dashboard.py serve --config ~/.config/commitandsee/config.json
 ```
 
-Relative paths resolve from the config file's directory. Change paths and refs to
-match your checkouts. [`config.example.json`](config.example.json) shows additional
-settings; review its example paths before use.
+Then use **Add repository** in the dashboard. Do not overwrite an existing
+configuration to follow this example. [`config.example.json`](config.example.json)
+shows more settings but contains sample paths; replace its entries before use.
 
-Registered worktrees sharing a Git common directory are counted once at the
-repository level. Their working states remain visible separately. Independent
-clones remain separate observations and can duplicate history totals if both
-are configured.
+For product grouping, add `name`, `product`, and `ref` to each local repository
+entry, such as:
 
-## Make the view yours
+```json
+{"name": "API", "product": "My product", "path": "/home/you/projects/api", "ref": "main"}
+```
+
+Relative paths in JSON resolve from the config file's directory. Sources also
+passed with `--repo` remain controlled by that launch command and cannot be
+removed persistently through the UI.
+
+### Options and exports
 
 ```bash
-# History reachable from local main, over the last 90 days.
+# Compare with local main and collect a 90-day history window.
 python3 git_dashboard.py serve --repo ~/projects/my-app --ref main --days 90
 
-# Another port and a shorter local refresh interval.
+# Choose another port and a shorter local refresh interval.
 python3 git_dashboard.py serve --repo ~/projects/my-app --port 8766 --interval 10
 
-# Use a locally cached remote-tracking ref. No fetch is performed.
-python3 git_dashboard.py serve --repo ~/projects/my-app --ref origin/main
+# Write a dated offline report outside the observed checkout.
+python3 git_dashboard.py scan --repo ~/projects/my-app --output ~/activity.html --json ~/activity.json
 ```
 
-| Setting | Default | Purpose |
+The HTML report opens offline. It is a snapshot; use `serve` for automatic updates.
+Static reports cannot add or remove sources.
+
+| Config setting | Default | Meaning |
 | --- | --- | --- |
-| `days` | `180` | History collection window |
-| `refresh_seconds` | `30` | Delay between collection cycles; minimum 5 seconds |
+| `days` | `180` | History window |
+| `refresh_seconds` | `30` | Delay between local collection cycles; minimum 5 seconds |
 | `history_refresh_seconds` | `300` | Cache unchanged history between collections |
-| `max_commits` | `20000` | Bound history collection; truncation stays visible |
+| `max_commits` | `20000` | Local history bound; truncated totals remain partial |
 | `stale_days` | `14` | Highlight old branch tips for review |
-| `timezone` | `America/Chicago` | Chart calendar buckets; UTC fallback if unavailable |
+| `timezone` | `America/Chicago` | Chart calendar buckets; falls back to UTC if unavailable |
 | `exclude_globs` | `[]` | Exclude matching paths from line metrics; pending files remain visible |
 
-Refresh intervals are configuration targets, not scan-time guarantees. Large
-repositories can take longer; failures remain visible in coverage details.
+Refresh intervals are targets, not completion or freshness guarantees. Public
+history collection has a 2,000-commit depth limit and 30-second Git command timeout;
+these are not byte or disk quotas. Large downloads, unavailable repositories, and
+GitHub rate limits produce partial results or explicit errors.
 
-## Take the picture with you
+## Understand the numbers
 
-Create a standalone HTML report and a machine-readable snapshot:
+- **History** counts non-merge commits reachable from the selected ref, grouped by
+  committer date. It is not an all-branches action ledger. Missing objects, shallow
+  history, exclusions, and commit limits affect completeness.
+- **Working changes** compare HEAD to the working tree. Staged and unstaged
+  comparisons are separate; adding them can double-count or cancel changes.
+  Untracked paths are listed without counting their contents as tracked churn.
+- **Ahead/behind** uses locally cached upstream refs. Local-checkout observation
+  does not fetch; missing upstreams remain unknown publication status.
+- **Unmerged candidates** use Git ancestry. Squash/rebase merges and reused
+  branches need interpretation; this is not authoritative GitHub PR status.
+- **Old work** is a review hint. Dirty ages start when this tool first observes the
+  work. An old branch or observation gap does not prove abandonment.
+- **Portfolio totals** are per configured source. Independent clones or overlapping
+  local/public sources can count the same commits more than once.
 
-```bash
-python3 git_dashboard.py scan \
-  --repo ~/projects/my-app \
-  --output activity.html \
-  --json activity.json
-```
+The server binds to **127.0.0.1**. Local Git observation disables optional locks,
+filesystem-monitor callbacks, and signature display. Public collection uses an
+isolated app-owned bare cache, anonymous HTTPS, and no checkout or execution of
+public repository files. This is a local dashboard, not a hosted team service.
 
-The HTML contains its data and charts and opens offline. It is a dated snapshot;
-use `serve` for automatic updates. The dashboard also has an **Export JSON** button.
+## Troubleshooting
 
-## Clear numbers. Clear boundaries.
+| What happened | What to do |
+| --- | --- |
+| **Git was not found** | Install Git for Windows, then close and reopen the launcher. In a terminal, `git --version` should report Git 2.37 or newer. |
+| **No browser tab opened** | Keep the console open and copy its printed **Dashboard URL**. The portable port is chosen at startup; do not assume it is 8765. |
+| **The EXE cannot find bundled files** | Extract the complete ZIP again. Keep `_internal` beside the EXE and run it from the extracted folder. |
+| **Windows warns about an unknown publisher** | The prerelease is unsigned. Verify its GitHub source and checksum against the release assets, and follow your device's security policy. |
+| **The local path is rejected** | Select **Local checkout** and enter an existing absolute Git-checkout path for the environment running the observer. A GitHub URL belongs in the public-source option. |
+| **Add or Remove is unavailable** | Use the portable app or launch the source server with `--config`. Static reports and `--repo`-controlled sources cannot save registry changes. |
+| **The page shows pending, partial, or unknown data** | Allow the first scan to finish and inspect observation coverage. Large repositories, missing worktrees, shallow history, or unavailable refs can limit results. |
+| **A public repository cannot be added** | Check the public GitHub URL, Internet access, and reported rate-limit/availability error. Private repositories need a local checkout. |
+| **Configuration changed outside the dashboard** | Stop and restart with the same configuration. Keep the JSON and its registry together. |
+| **The source server's port is already in use** | Stop your earlier server or choose another port with `--port 8766`. The portable app selects an available port by default. |
 
-- **History:** non-merge commits reachable from the selected ref, bucketed by
-  committer date. This is not an all-branches action ledger. In shallow clones,
-  parentless-commit line deltas are omitted because missing parents can turn old
-  code into apparent additions; history totals remain partial.
-- **Additions/deletions:** changed text lines, not total source LOC, productivity,
-  correctness, or task completion. Binary changes are separate.
-- **Current tracked work:** HEAD to working tree. Staged and unstaged deltas are
-  separate comparisons; adding them can double-count or cancel changes. Untracked
-  paths are listed without adding their contents to tracked line counts.
-- **Ahead/behind:** locally cached upstream information. Missing upstreams remain
-  unknown publication status. This version does not query GitHub PRs.
-- **Not merged:** Git ancestry against the selected ref. Squash/rebase merges and
-  reused branches require additional interpretation.
-- **Old work:** a review hint. An old tip, dirty file, or offline interval does not
-  prove abandonment. Dirty observation ages begin when this tool sees them.
-- **Partial evidence:** missing objects, shallow history, commit limits,
-  inaccessible worktrees, and unstable observations stay visible.
+If the problem remains, [open an issue](https://github.com/TOTALLYMAJOR/CommitandSee/issues)
+with the app version, OS, Git version, startup command, and redacted error text.
+Use a small disposable reproduction; do not attach private configuration or exports.
 
-## Local by design
+## Contribute and verify
 
-The HTTP server binds to **127.0.0.1**. Local-checkout observation does not stage,
-commit, push, merge, fetch, prune, reset, or delete repository work. Public-source
-history is fetched only into the dashboard-owned bare cache. Git observations disable
-optional locks, executable filesystem-monitor callbacks, and signature display.
-Temporary Git configuration overrides are scrubbed. Configured content
-filters can make working measurements unavailable rather than execute them.
-
-The dashboard does not retain file contents or patches. Paths, branch names,
-commit metadata, and exports can still contain private project information.
-
-Observation timing is saved to `~/.git-activity-dashboard/observations.json` by
-default. Override with `--state /path/outside/your/checkouts/observations.json`.
-Keep state and report outputs outside monitored repositories. No background service
-is installed; refresh stops when the process stops.
-
-## Windows and WSL
-
-Run the observer where the repositories live. For WSL repositories, use Python
-and Git inside WSL. For a Windows checkout, from PowerShell:
-
-```powershell
-py -3 git_dashboard.py serve --repo "C:\Users\you\projects\my-app"
-```
-
-The full Python suite is validated on WSL/Linux. Targeted subprocess cancellation
-checks also run on native Windows; see the recorded versions and boundaries in
-[VERIFICATION.md](VERIFICATION.md). Native Windows UI and end-to-end collection
-are not covered by those targeted checks.
-
-## Run the checks
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [release notes](RELEASE-NOTES.md), and
+[VERIFICATION.md](VERIFICATION.md) for scope and recorded evidence. The application
+is [MIT licensed](LICENSE). [Packaging instructions](packaging/README.md) explain
+how the native Windows ZIP is built.
 
 ```bash
 python3 -B -m unittest -v
 ```
 
-Browser regressions are optional development checks and require an existing Node,
-Playwright, and browser installation; they are not application dependencies:
+Optional browser regressions use an existing Node, Playwright, and browser
+installation; these are development tools, not app dependencies:
 
 ```bash
 BROWSER_ENGINE=chromium node test_dashboard_browser.cjs
@@ -329,26 +290,12 @@ BROWSER_ENGINE=firefox node test_dashboard_browser.cjs
 BROWSER_ENGINE=webkit node test_dashboard_browser.cjs
 ```
 
-If those tools are installed outside the project, `PLAYWRIGHT_MODULE` can name
-the installed Playwright module and `BROWSER_EXECUTABLE` the browser executable.
-`CHROMIUM_EXECUTABLE` remains a Chromium-only compatibility alias. Run engines
-sequentially. An installed `axe-core` (or `AXE_CORE_MODULE` path) enables automated
-accessibility checks; a missing optional scanner is reported as skipped.
-The browser tests use synthetic data and intercepted responses, with no GitHub
-requests or changes to your repository configuration.
+Run engines sequentially. `PLAYWRIGHT_MODULE`, `BROWSER_EXECUTABLE`, and the
+Chromium-only `CHROMIUM_EXECUTABLE` support tools installed outside the project.
+An installed `axe-core` or `AXE_CORE_MODULE` enables accessibility scans; absence
+is reported as skipped. Fixtures are synthetic or disposable. Passing these
+checks does not establish complete accessibility conformance or production readiness.
+[`CHECKSUMS.sha256`](CHECKSUMS.sha256) records source-package integrity.
 
-Tests use disposable repositories and offline fixtures, without your credentials
-or project repositories. See [`VERIFICATION.md`](VERIFICATION.md) for recorded
-evidence and limitations. [`CHECKSUMS.sha256`](CHECKSUMS.sha256) records package-file
-integrity checks.
-
-## Contribute and follow releases
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for small, reproducible contributions and
-[release notes](RELEASE-NOTES.md) for changes and upgrade guidance. Published
-versions are listed on [GitHub Releases](https://github.com/TOTALLYMAJOR/CommitandSee/releases).
-CommitandSee is available under the [MIT license](LICENSE).
-
----
-
-**Less hunting through branches. More understanding of where your work stands.**
+If CommitandSee helps you find unfinished work, a star helps other developers
+find the project. Bug reports and clear reproductions are welcome too.
