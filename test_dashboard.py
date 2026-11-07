@@ -8,9 +8,47 @@ import threading
 import unittest
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import git_dashboard as dashboard
+
+
+class CommitPullTests(unittest.TestCase):
+    def test_lookup_only_accepts_observed_commit_and_returns_safe_link_fields(self):
+        sha = "a" * 40
+        state = Mock()
+        state.read.return_value = {"repositories": [
+            {"id": "local", "github_url": "https://github.com/octocat/example",
+             "history": {"events": [{"sha": sha}]}}]}
+        with patch("git_dashboard._request_json", return_value=[
+                {"number": 5, "title": "Example", "html_url": "https://elsewhere.invalid"}]) as api:
+            with self.assertRaises(dashboard.RepositoryError):
+                dashboard.LiveState.commit_pulls(state, {"repository": "local", "sha": "b" * 40})
+            api.assert_not_called()
+            result = dashboard.LiveState.commit_pulls(state, {"repository": "local", "sha": sha})
+            self.assertEqual(result, {"pulls": [{"number": 5, "title": "Example"}], "limited": False})
+            api.assert_called_once_with("GET", f"https://api.github.com/repos/octocat/example/commits/{sha}/pulls?per_page=100")
+
+    def test_private_lookup_uses_only_selected_repository_session(self):
+        from contextlib import nullcontext
+        from github_auth import GitHubAuthError
+        sha = "f" * 40
+        state = Mock()
+        url = "https://github.com/octocat/example"
+        state.read.return_value = {"github_generation": 4, "repositories": [
+            {"id": "repo", "url": url, "history": {"events": [{"sha": sha}]},
+             "source_kind": "github", "github_generation": 4, "github_account_id": 12}]}
+        state.auth.session_guard.return_value = nullcontext()
+        state.auth.request_json.return_value = []
+        with patch("git_dashboard._request_json") as anonymous:
+            self.assertEqual(dashboard.LiveState.commit_pulls(state, {"repository": "repo", "sha": sha})["pulls"], [])
+            anonymous.assert_not_called()
+            state.auth.request_json.assert_called_once_with(
+                f"/repos/octocat/example/commits/{sha}/pulls?per_page=100", expected_session=(4, 12))
+            state.auth.session_guard.side_effect = GitHubAuthError("session_changed", "Signed out.", 409)
+            with self.assertRaises(GitHubAuthError):
+                dashboard.LiveState.commit_pulls(state, {"repository": "repo", "sha": sha})
+
 
 
 class DashboardTests(unittest.TestCase):

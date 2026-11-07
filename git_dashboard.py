@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import sys
 import tempfile
@@ -22,7 +23,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from git_metrics import collect_repository, GitError, _Git, _git_capabilities
 from public_repositories import public_url, public_metadata, collect_public
 from repository_registry import RepositoryRegistry, validate_state_destination
-from github_auth import GitHubAuth, GitHubAuthError, github_app_config
+from github_auth import API_ROOT, GitHubAuth, GitHubAuthError, _request_json, github_app_config
 from authenticated_repositories import collect_authenticated
 
 ROOT = Path(__file__).resolve().parent
@@ -538,6 +539,39 @@ class LiveState:
         return {**result, "github_session_id": self.github_session_id,
                 "github_generation": self.auth.generation if generation is None else generation}
 
+    def commit_pulls(self, body):
+        if (not isinstance(body, dict) or set(body) != {"repository", "sha"}
+                or not isinstance(body["repository"], str) or not isinstance(body["sha"], str)
+                or not re.fullmatch(r"[0-9a-f]{40}", body["sha"])):
+            raise RepositoryError("invalid_input", "Choose an observed GitHub commit.")
+        snapshot = self.read()
+        repo = next((r for r in snapshot["repositories"] if r.get("id") == body["repository"]), None)
+        sha = body["sha"]
+        if not repo or not any(c["sha"] == sha for c in (repo.get("history") or {}).get("events", [])):
+            raise RepositoryError("not_found", "This commit is outside the current observation.", 404)
+        try:
+            url = public_url(repo.get("github_url") or repo.get("url"))
+        except ValueError:
+            raise RepositoryError("unsupported", "No GitHub repository is available for this commit.") from None
+        path = f"/repos/{url.removeprefix('https://github.com/')}/commits/{sha}/pulls?per_page=100"
+        # Credentials are restricted to repositories explicitly selected by this account.
+        imported = next((r for r in snapshot["repositories"] if r.get("source_kind") == "github"
+                         and r.get("url") == url and not r.get("authentication_required")
+                         and r.get("github_generation") == snapshot.get("github_generation")), None)
+        if imported:
+            generation, account = imported["github_generation"], imported["github_account_id"]
+            rows = self.auth.request_json(path, expected_session=(generation, account))
+        else:
+            rows = _request_json("GET", API_ROOT + path)
+        pulls = []
+        for row in rows:
+            number = row.get("number") if isinstance(row, dict) else None
+            if type(number) != int or number < 1 or not isinstance(row.get("title"), str):
+                raise GitHubAuthError("invalid_response", "GitHub returned invalid pull request details.", 502)
+            pulls.append({"number": number, "title": row["title"][:300]})
+        with self.auth.session_guard(generation, account) if imported else nullcontext():
+            return {"pulls": pulls, "limited": len(rows) == 100}
+
     def github_action(self, action, body):
         if not isinstance(body, dict) or body:
             raise RepositoryError("invalid_input", "Send an empty JSON object for this action.")
@@ -850,7 +884,7 @@ def make_handler(state):
                 return
             github_actions = {"/api/github/" + action: action for action in ("start", "cancel", "disconnect")}
             if self.path not in {"/api/repositories", "/api/repositories/remove",
-                                 "/api/github/repositories", "/api/github/import", *github_actions}:
+                                 "/api/github/repositories", "/api/github/import", "/api/commit-pulls", *github_actions}:
                 self.json_response({"error": {"code": "not_found", "message": "Unknown endpoint."}}, 404)
                 return
             try:
@@ -859,7 +893,9 @@ def make_handler(state):
                     raise RepositoryError("invalid_request", "Send a JSON object no larger than 8 KiB.")
                 self.connection.settimeout(5)
                 body = json.loads(self.rfile.read(length))
-                if self.path in github_actions:
+                if self.path == "/api/commit-pulls":
+                    result, status = state.commit_pulls(body), 200
+                elif self.path in github_actions:
                     result, status = state.github_action(github_actions[self.path], body), 200
                 elif self.path == "/api/github/repositories":
                     result, status = state.github_repositories(body), 200

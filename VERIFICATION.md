@@ -384,3 +384,45 @@ GitHub history; that proof belongs to the separate source-preview flow above.
 Native browser appearance, clean-machine compatibility, SmartScreen reputation,
 signed-installer behavior, and complete accessibility remain unqualified. This
 is an unsigned prerelease, with Git for Windows still required.
+
+## Chart selection and insights source verification — 2026-11-06
+
+The source preview on feature/chart-pr-drilldown was checked in Ubuntu-24.04
+WSL, with browser tests running in native Windows Chromium. The checks cover
+the selection panel, pointer and keyboard zoom, touch interaction, preceding
+equal-duration comparisons, and on-demand PR grouping.
+
+- The Python unittest suite ran 148 tests with 144 passes and four skips.
+  The skipped checks require native Windows behavior.
+- The dashboard and GitHub browser suites ran 37 tests with 35 passes and
+  two optional axe-core skips, using Node's test runner with concurrency 1.
+- Regression fixtures cover a 125,000-line spike, repeated daylight-saving
+  hours, mouse and touch drag, keyboard range selection, reset and refresh,
+  complete and partial baselines, a zero baseline, older snapshots, static
+  reports, shared and ambiguous PRs, provider failures, bounded 20-commit
+  batches, in-memory caching, and stale responses after repository changes.
+- The live local preview reconciled 12 captured commits with 16,493 additions.
+  Its three largest addition contributors accounted for 70.8% of additions.
+  Desktop and 390-pixel mobile rendering were visually inspected. The mobile
+  document had zero horizontal overflow and the live browser check reported
+  zero page errors.
+- The bundled demo was regenerated. The source checksum manifest was
+  regenerated and checked, and Git's diff whitespace check passed.
+
+PR grouping was exercised with controlled provider responses. The prior
+commit-to-PR endpoint smoke check also resolved a real public GitHub commit.
+Private installation permission changes and a new Windows portable build
+are outside this source-preview verification.
+
+### Commit preparation recheck — 2026-11-07
+
+The unchanged implementation passed the Python suite again with 144 passes and
+four Windows-specific skips. In the full Chromium run, one GitHub sign-in
+fixture exceeded the existing 10-second page-load timeout before its assertions.
+The dashboard suite passed all 22 enabled tests. Rerunning the complete GitHub
+browser suite passed all 13 enabled tests. Two optional axe-core tests were
+skipped across the browser suites. No timeout settings or application behavior
+were changed for the rerun.
+
+Windows Git fetched the remote after WSL DNS failed. The remote main tip still
+matched the feature branch's base. The final checksum and diff checks passed.
