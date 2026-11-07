@@ -10,6 +10,11 @@ The implementation uses device authorization and read-only repository
 permissions. The published **v0.2.0-rc.1 Windows ZIP does not include GitHub
 sign-in**; adding settings to that older build will not enable it.
 
+For the source build's chart-to-PR lookup on private repositories, the publisher
+can also enable **Pull requests: read-only**, and the installation owner must
+accept the new permission. Existing installations can keep using history and
+the browser-based PR search with their current permissions.
+
 ## Bundled public registration
 
 | Field | Value |
@@ -42,6 +47,7 @@ GitHub Apps → New GitHub App**. Use these settings:
 | Setup URL / Redirect on update | Leave unset |
 | Webhooks → Active | Disabled; no webhook URL or secret |
 | Repository permissions | **Contents: Read-only** and **Metadata: Read-only** |
+| Pull requests | Optional **Read-only** for private chart-to-PR lookup |
 | Other repository, organization, account, and enterprise permissions | No access |
 | Where can this GitHub App be installed? | **Any account** |
 

@@ -24,7 +24,7 @@ before(async () => {
 after(async () => { if (browser) await browser.close(); });
 
 async function fixture(t, options = {}) {
-  const context = await browser.newContext({viewport: {width: 1440, height: 1000}, reducedMotion: options.reducedMotion || 'reduce'});
+  const context = await browser.newContext({viewport: {width: 1440, height: 1000}, reducedMotion: options.reducedMotion || 'reduce', hasTouch:Boolean(options.touch)});
   t.after(() => context.close());
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
@@ -72,12 +72,14 @@ async function fixture(t, options = {}) {
   const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'demo.json'), 'utf8'));
   Object.assign(data, {live: true, repository_management: true, collection_running: true});
   for (const repo of data.repositories) repo.removable = true;
+  if (options.prepare) options.prepare(data);
   const html = fs.readFileSync(path.join(__dirname, 'dashboard.html'), 'utf8')
     .replace('__GIT_DASHBOARD_DATA__', JSON.stringify(data).replaceAll('<', '\\u003c'));
   if (!options.nativeClock) await page.clock.install();
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
     assert.equal(url.origin, origin, 'fixture does not call external services');
+    if (url.pathname === '/api/commit-pulls' && options.pulls) return options.pulls(route);
     if (url.pathname === '/api/snapshot') {
       if (options.snapshot) return options.snapshot(route, data);
       return route.fulfill({json: data});
@@ -398,4 +400,257 @@ test('automated WCAG A/AA checks cover desktop, mobile and add dialog', {skip: !
     })).violations.map(violation => ({id: violation.id, impact: violation.impact, nodes: violation.nodes.map(node => node.target)})));
     assert.deepEqual(result, [], state + ' automated accessibility violations');
   }
+});
+
+test('intraday intervals distinguish repeated hours and resolve a 125k spike', async t => {
+  const day = {date:'2026-11-01',start:1793509200,end:1793599200,commits:3,added:125001,deleted:0};
+  const {page} = await fixture(t, {
+    prepare(data) {
+      const repo=data.repositories[0];data.repositories=[repo];repo.github_url='https://github.com/octocat/example';
+      repo.history.daily=[day];repo.history.commits=3;
+      repo.history.events=[{epoch:day.start+3660,sha:'a'.repeat(40),added:125000,deleted:0},
+        {epoch:day.start+7260,sha:'b'.repeat(40),added:1,deleted:0},
+        {epoch:day.start+7380,sha:'c'.repeat(40),added:0,deleted:0}];
+    },
+    pulls(route){
+      const {sha}=route.request().postDataJSON();
+      const pulls=sha.startsWith('a')?[{number:42,title:'Introduce feature'}, {number:43,title:'Backport'}]:[];
+      return route.fulfill({json:{pulls,limited:false}});
+    }
+  });
+  await page.setViewportSize({width:390,height:844});
+  await page.selectOption('#interval-select','60');
+  assert.equal(await page.locator('#weekly-data tbody tr').count(),25);
+  const rows=page.locator('#weekly-data tbody tr');
+  assert.match(await rows.nth(1).textContent(),/1:00\sAM CDT/);
+  assert.match(await rows.nth(2).textContent(),/1:00\sAM CST/);
+  const plot=page.locator('#frequency-chart [role=slider]');
+  await plot.focus();await plot.press('ArrowRight');await plot.press('Enter');
+  const dialog=page.locator('#point-dialog');
+  assert.match(await dialog.locator('#point-summary').innerText(),/125,000/);
+  await dialog.getByRole('link',{name:'#42 Introduce feature'}).waitFor();
+  assert.equal(await dialog.getByRole('link',{name:'#42 Introduce feature'}).getAttribute('href'),'https://github.com/octocat/example/pull/42');
+  assert.match(await dialog.innerText(),/1:01:00\sAM CDT/);
+  await page.keyboard.press('Escape');
+  await page.selectOption('#interval-select','15');
+  assert.equal(await page.locator('#weekly-data tbody tr').count(),100);
+  await page.locator('#frequency-chart').locator('..').locator('summary').click();
+  await page.locator('#weekly-data tbody tr').nth(8).locator('button').click();
+  await until(async()=> (await dialog.innerText()).includes('GitHub found no associated PR.'),'no-match state');
+  assert.match(await dialog.locator('#point-summary').innerText(),/2 commits/);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile layout fits');
+});
+
+test('clicking a bar opens the single PR common to every contributor', async t=>{
+  const requests=[];
+  const {page}=await fixture(t,{
+    prepare(data){
+      const repo=data.repositories[0];data.repositories=[repo];repo.github_url='https://github.com/octocat/example';
+      const day=repo.history.daily.at(-1);repo.history.daily=[day];
+      day.commits=2;repo.history.commits=2;day.added=125000;day.deleted=0;
+      repo.history.events=['d','e'].map(letter=>({sha:letter.repeat(40),epoch:day.start+10,added:62500,deleted:0}));
+    },
+    pulls(route){
+      requests.push(route.request().postDataJSON().sha);
+      return route.fulfill({json:{pulls:[{number:42,title:'One shared PR'}],limited:false}});
+    }
+  });
+  await page.route('https://github.com/octocat/example/pull/42',route=>route.fulfill({body:'PR 42'}));
+  await page.selectOption('#interval-select','day');
+  await page.locator('#frequency-chart [role=slider]').click();
+  await page.waitForURL('https://github.com/octocat/example/pull/42');
+  assert.equal(new Set(requests).size,2);
+});
+
+function selectionFixture(data) {
+  const repo=data.repositories[0];
+  data.repositories=[repo];
+  repo.github_url='https://github.com/octocat/example';
+  repo.collected_at=data.generated_at='2026-11-05T18:30:00Z';
+  repo.history.collected_at=data.generated_at;
+  const start=Date.parse('2026-11-01T05:00:00Z')/1000;
+  repo.history.daily=[
+    {date:'2026-11-01',start,end:start+90000,commits:1,added:100,deleted:10},
+    {date:'2026-11-02',start:start+90000,end:start+176400,commits:2,added:300,deleted:30},
+    {date:'2026-11-03',start:start+176400,end:start+262800,commits:1,added:600,deleted:60},
+    {date:'2026-11-04',start:start+262800,end:start+349200,commits:0,added:0,deleted:0}
+  ];
+  repo.history.events=[
+    {sha:'a'.repeat(40),epoch:start+3600,added:100,deleted:10,subject:'Baseline'},
+    {sha:'b'.repeat(40),epoch:start+93600,added:100,deleted:10,subject:'First PR commit'},
+    {sha:'c'.repeat(40),epoch:start+94200,added:200,deleted:20,subject:'Second PR commit'},
+    {sha:'d'.repeat(40),epoch:start+180000,added:600,deleted:60,subject:'Large change'}
+  ];
+  repo.history.commits=4;repo.history.total_added=1000;repo.history.total_deleted=100;
+  repo.history.shallow=false;repo.history.truncated=false;
+  repo.status='ok';repo.source_status={history:'ok'};
+}
+
+test('selection panel reconciles totals, zooms by keyboard and compares preceding duration',async t=>{
+  const {page}=await fixture(t,{prepare:selectionFixture,pulls:route=>route.fulfill({json:{pulls:[],limited:false}})});
+  await page.selectOption('#interval-select','day');
+  assert.match(await page.locator('#selection-totals').textContent(),/1,000/);
+  const plot=page.locator('#frequency-chart [role=slider]');
+  await plot.focus();await plot.press('Home');await plot.press('ArrowRight');
+  await plot.press('Shift+ArrowRight');await plot.press('Enter');
+  assert.equal(await page.locator('#reset-zoom').isVisible(),true);
+  assert.equal(await page.locator('#point-dialog').isVisible(),false);
+  assert.match(await page.locator('#selection-totals').textContent(),/900/);
+  assert.match(await page.locator('#selection-coverage').textContent(),/4 commits|3 commits/);
+  await page.getByRole('button',{name:'Reset zoom',exact:true}).click();
+  assert.match(await page.locator('#selection-totals').textContent(),/1,000/);
+  // Select one completed day with equal-duration preceding coverage.
+  await page.locator('#frequency-chart').locator('..').locator('summary').click();
+  await page.locator('#weekly-data tbody tr').nth(2).getByRole('button').click();
+  await page.locator('#point-close').click();
+  assert.match(await page.locator('#selection-comparison').textContent(),/600/);
+  assert.match(await page.locator('#selection-comparison').textContent(),/300/);
+  assert.match(await page.locator('#selection-comparison').textContent(),/100%/);
+});
+
+test('PR groups count shared and ambiguous commits once and preserve unknown lookup status',async t=>{
+  const {page}=await fixture(t,{prepare:selectionFixture,pulls(route){
+    const letter=route.request().postDataJSON().sha[0];
+    if(letter==='a')return route.fulfill({status:503,json:{error:{message:'Rate limited'}}});
+    const pulls=letter==='d'?[{number:2,title:'A'},{number:3,title:'B'}]:[{number:42,title:'Shared PR'}];
+    return route.fulfill({json:{pulls,limited:false}});
+  }});
+  await page.getByRole('button',{name:'Group by PR',exact:true}).click();
+  await until(async()=>!(await page.locator('#group-prs').isDisabled()),'PR grouping finishes');
+  assert.match(await page.locator('#selection-pr-groups').textContent(),/Not looked up/);
+  await page.locator('#group-prs').click();
+  await until(async()=>!(await page.locator('#group-prs').isDisabled()),'remaining lookups finish');
+  const groups=await page.locator('#selection-pr-groups').textContent();
+  assert.match(groups,/Shared PR/);assert.match(groups,/30%/);
+  assert.match(groups,/Multiple associated PRs/);assert.match(groups,/60%/);
+  assert.match(groups,/Lookup unavailable/);assert.match(groups,/10%/);
+  await page.selectOption('#share-metric','deleted');
+  assert.match(await page.locator('#selection-pr-groups').textContent(),/30%/);
+});
+
+test('mouse drag zooms both charts and refresh preserves the selected range',async t=>{
+  const {page}=await fixture(t,{prepare:selectionFixture});
+  await page.selectOption('#interval-select','day');
+  const svg=page.locator('#frequency-chart svg'),box=await svg.boundingBox();
+  const originX=box.x+box.width*(52+651/4*1.5)/720;
+  const endX=box.x+box.width*(52+651/4*2.5)/720;
+  const y=box.y+box.height/2;
+  await page.mouse.move(originX,y);await page.mouse.down();
+  await page.mouse.move(endX,y,{steps:8});await page.mouse.up();
+  assert.equal(await page.locator('#point-dialog').isVisible(),false);
+  assert.match(await page.locator('#selection-totals').textContent(),/900/);
+  assert.equal(await page.locator('#commits-chart [role=slider]').getAttribute('aria-label'),'Hourly commit inspection');
+  const before=await page.locator('#selection-period').textContent();
+  const response=page.waitForResponse('**/api/snapshot');await page.clock.fastForward(3000);await response;
+  assert.equal(await page.locator('#selection-period').textContent(),before);
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'selection panel fits mobile');
+});
+
+test('baselines expose zero activity, partial history and missing event detail',async t=>{
+  const {page,data}=await fixture(t,{prepare:selectionFixture,pulls:route=>route.fulfill({json:{pulls:[],limited:false}})});
+  await page.selectOption('#interval-select','day');
+  await page.locator('#frequency-chart').locator('..').locator('summary').click();
+  await page.locator('#weekly-data tbody tr').nth(3).getByRole('button').click();
+  await page.locator('#point-close').click();
+  assert.match(await page.locator('#selection-comparison').textContent(),/decreased 100%/);
+  data.repositories[0].history.truncated=true;
+  await page.getByRole('button',{name:'Refresh view'}).click();
+  assert.match(await page.locator('#selection-comparison').textContent(),/complete preceding period is unavailable/);
+  assert.match(await page.locator('#selection-coverage').textContent(),/Partial/);
+  delete data.repositories[0].history.events;
+  await page.getByRole('button',{name:'Refresh view'}).click();
+  assert.equal(await page.locator('#selection-totals').textContent(),'Commit details unavailable');
+  assert.equal(await page.locator('#group-prs').isDisabled(),true);
+});
+
+test('PR batches are bounded, cached, and never included in exported snapshots',async t=>{
+  let calls=0;
+  const {page}=await fixture(t,{prepare(data){
+    selectionFixture(data);
+    const repo=data.repositories[0],start=repo.history.daily[1].start;
+    repo.history.events=Array.from({length:22},(_,i)=>({sha:i.toString(16).padStart(40,'0'),epoch:start+i,added:1,deleted:0,subject:'Change '+i}));
+    repo.history.commits=22;repo.history.total_added=22;
+  },pulls(route){calls++;return route.fulfill({json:{pulls:[{number:42,title:'Grouped change'}],limited:false}});}});
+  await page.locator('#group-prs').click();
+  await until(async()=>!(await page.locator('#group-prs').isDisabled()),'first batch completes');
+  assert.equal(calls,20);
+  assert.match(await page.locator('#selection-pr-status').textContent(),/20 \/ 22/);
+  await page.locator('#group-prs').click();
+  await until(async()=> (await page.locator('#selection-pr-status').textContent()).includes('22 / 22'),'second batch completes');
+  assert.equal(calls,22);
+  assert.match(await page.locator('#selection-pr-groups').textContent(),/100%/);
+  // Changing interval resets the grouping display but reuses scoped in-memory results.
+  await page.selectOption('#interval-select','day');
+  await page.locator('#group-prs').click();
+  await until(async()=>!(await page.locator('#group-prs').isDisabled()),'cached batch completes');
+  assert.equal(calls,22);
+  assert.equal(await page.evaluate(()=>JSON.stringify(data).includes('Grouped change')),false);
+});
+
+test('late PR lookups cannot restore results from an earlier repository selection',async t=>{
+  let release,arrived;
+  const incoming=new Promise(resolve=>arrived=resolve);
+  const {page}=await fixture(t,{prepare(data){
+    selectionFixture(data);
+    const other=JSON.parse(JSON.stringify(data.repositories[0]));
+    other.id='another';other.name='Another';other.path='/another';other.github_url='https://github.com/octocat/another';
+    data.repositories.push(other);
+  },async pulls(route){
+    arrived();
+    await new Promise(resolve=>release=resolve);
+    await route.fulfill({json:{pulls:[{number:42,title:'Old private PR title'}],limited:false}}).catch(()=>{});
+  }});
+  await page.selectOption('#repo-select','/demo/frontend');
+  await page.locator('#group-prs').click();await incoming;
+  await page.selectOption('#repo-select','/another');release();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#selection-pr-groups').textContent(),'');
+  assert.match(await page.locator('#selection-pr-status').textContent(),/0 \/ 4/);
+});
+
+test('touch drag selects a range on a narrow screen', {skip:engine!=='chromium'}, async t=>{
+  const {page}=await fixture(t,{prepare:selectionFixture,touch:true});
+  await page.setViewportSize({width:390,height:844});
+  await page.selectOption('#interval-select','day');
+  const plot=page.locator('#frequency-chart [role=slider]');
+  await plot.scrollIntoViewIfNeeded();
+  const svg=await page.locator('#frequency-chart svg').boundingBox();
+  const x1=svg.x+svg.width*(52+651/4*1.5)/720, x2=svg.x+svg.width*(52+651/4*2.5)/720,y=svg.y+svg.height/2;
+  const client=await page.context().newCDPSession(page);
+  await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x1,y}]});
+  for(let i=1;i<=8;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x1+(x2-x1)*i/8,y}]});
+  await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  assert.equal(await page.locator('#reset-zoom').isVisible(),true);
+  assert.match(await page.locator('#selection-totals').textContent(),/900/);
+  assert.equal(await page.locator('#point-dialog').isVisible(),false);
+  await client.detach();
+});
+
+test('static selections zoom without network lookups and show missing comparison coverage',async t=>{
+  const {page}=await fixture(t,{prepare(data){selectionFixture(data);data.live=false;}});
+  await page.selectOption('#interval-select','day');
+  assert.equal(await page.locator('#group-prs').isDisabled(),true);
+  const plot=page.locator('#frequency-chart [role=slider]');
+  await plot.focus();await plot.press('Home');await plot.press('Shift+ArrowRight');await plot.press('Enter');
+  assert.match(await page.locator('#selection-totals').textContent(),/400/);
+  assert.match(await page.locator('#selection-comparison').textContent(),/preceding period is unavailable/);
+  assert.match(await page.locator('#selection-pr-note').textContent(),/Live PR grouping requires/);
+  assert.equal(await page.locator('#reset-zoom').isVisible(),true);
+});
+
+test('a zero preceding period keeps actual counts and omits an infinite percentage',async t=>{
+  const {page}=await fixture(t,{prepare(data){
+    selectionFixture(data);
+    const repo=data.repositories[0];
+    repo.history.events=repo.history.events.filter(e=>e.sha[0]!=='a');
+    Object.assign(repo.history.daily[0],{commits:0,added:0,deleted:0});
+  },pulls:route=>route.fulfill({json:{pulls:[],limited:false}})});
+  await page.selectOption('#interval-select','day');
+  await page.locator('#frequency-chart').locator('..').locator('summary').click();
+  await page.locator('#weekly-data tbody tr').nth(1).getByRole('button').click();
+  await page.locator('#point-close').click();
+  const text=await page.locator('#selection-comparison').textContent();
+  assert.match(text,/300/);assert.match(text,/previous period has zero added lines/);
+  assert.doesNotMatch(text,/Infinity|NaN/);
 });

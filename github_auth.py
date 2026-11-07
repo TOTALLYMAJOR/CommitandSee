@@ -80,9 +80,15 @@ def _seconds(value, *, maximum=31536000):
     return type(value) is int and 0 < value <= maximum
 
 
+_PULL_PATH = re.compile(r"/repos/[A-Za-z0-9][A-Za-z0-9-]{0,38}/(?!\.{1,2}/)[A-Za-z0-9_.-]{1,100}"
+                        r"/commits/[a-f0-9]{40}/pulls\?per_page=100")
+
+
 def _api_path(path):
     if not isinstance(path, str):
         raise GitHubAuthError("invalid_endpoint", "Unsupported GitHub API request.")
+    if _PULL_PATH.fullmatch(path):
+        return path
     parsed = urlsplit(path)
     if parsed.scheme or parsed.netloc or parsed.fragment:
         raise GitHubAuthError("invalid_endpoint", "Unsupported GitHub API request.")
@@ -150,7 +156,8 @@ def _request_json(method, url, *, data=None, token=None):
         raise
     except (ValueError, UnicodeError):
         raise GitHubAuthError("invalid_response", "GitHub returned an invalid response.", 502) from None
-    if not isinstance(result, dict):
+    expected = list if _PULL_PATH.fullmatch(url.removeprefix(API_ROOT)) else dict
+    if not isinstance(result, expected):
         raise GitHubAuthError("invalid_response", "GitHub returned an invalid response.", 502)
     return result
 
@@ -344,7 +351,8 @@ class GitHubAuth:
             raise
         except Exception:
             raise GitHubAuthError("github_unavailable", "GitHub could not complete this request. Try again later.", 503) from None
-        if not isinstance(payload, dict):
+        expected = list if _PULL_PATH.fullmatch(url.removeprefix(API_ROOT)) else dict
+        if not isinstance(payload, expected):
             raise GitHubAuthError("invalid_response", "GitHub returned an invalid response.", 502)
         return payload
 
@@ -465,11 +473,13 @@ class GitHubAuth:
                 raise GitHubAuthError("session_changed", "The GitHub session changed. Sign in again or retry.", 409)
             yield
 
-    def request_json(self, path):
+    def request_json(self, path, *, expected_session=None):
         """Authenticated, allowlisted GET for backend collectors; never a proxy."""
         _api_path(path)
         with self._lock:
             generation, account = self._generation, self._user["id"] if self._user else None
+            if expected_session is not None and (generation, account) != expected_session:
+                raise GitHubAuthError("session_changed", "The GitHub session changed. Try again.", 409)
         token = self.token()
         with self.session_guard(generation, account):
             if token != self._access_token:

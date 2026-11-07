@@ -95,6 +95,61 @@ Want to explore before setting up repositories? Download the source from the
 [release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.3.0-rc.1)
 and open [`demo.html`](demo.html) locally. Its data is clearly labeled synthetic.
 
+### Inspect a selection and compare periods (source build)
+
+The **About this selection** panel explains the displayed history using captured
+commit details. It shows totals, the three largest contributors, and each
+contributor's share of added, deleted, or changed lines. Changed lines are the sum
+of additions and deletions. The panel follows the repository and history filters.
+
+Drag horizontally across either chart to zoom both charts into that range.
+Keyboard users can hold **Shift** while using the arrow keys, then press **Enter**.
+**Escape** cancels a keyboard selection. **Reset zoom** returns to the previous
+chart interval. Touch users can drag horizontally and scroll vertically.
+
+The zoom interval is chosen automatically, from 15 minutes through weeks.
+The interval menu can override it. For unzoomed hour and 15-minute views, select
+a chart date. All times follow the dashboard timezone, including repeated
+daylight-saving hours. Selections use an inclusive start and exclusive end.
+
+The comparison uses the immediately preceding period of equal elapsed duration.
+It shows the actual totals and percentage difference for the selected metric.
+Comparison requires complete timestamped coverage for every selected repository
+in both periods. An earlier zero is displayed without a percentage ratio.
+Shallow, truncated, missing, and older aggregate-only history receive explicit
+coverage messages. Current worktree, branch, and stash observations remain
+separate from the chart selection.
+
+### Follow changes to pull requests
+
+Click a bar or point, or focus the plot and press **Enter**, to inspect its
+commits. The detail view shows commit time, subject, and line counts.
+A live lookup sends the repository and selected commit SHA to GitHub.
+For up to four commits, the dashboard opens the PR when GitHub returns the same
+single association for every commit. For other selections, use the individual
+commit lookup or the selection panel's **Group by PR** button.
+
+PR grouping processes at most 20 commits per click, largest contributors first.
+The next batch is available after the first completes. Successful lookups are
+cached in the browser for five minutes, scoped to the current repository and
+GitHub session. Results are held in memory and kept out of exported snapshots.
+**Refresh PR associations** explicitly requests fresh results. A failed lookup
+pauses the batch so that remaining commits can be checked later.
+
+Each captured commit contributes to one group. A commit with one association is
+assigned to that PR. Multiple associations, an incomplete association list, no
+association found, unavailable lookups, pending lookups, and missing GitHub
+origins are displayed separately. Shares use all captured line counts for the
+selected metric, including unresolved groups.
+
+Local checkouts need a recognized GitHub origin for links. Private API lookups
+require an imported repository and **Pull requests: read-only** permission on the
+GitHub App installation. If access is unavailable, use a commit's GitHub search
+link with your browser session. Static reports support selection, zoom, and
+comparisons from embedded data, with browser search links for PRs.
+Collect a fresh snapshot to add timestamped details to older reports.
+
+
 ## Alternatives and where CommitandSee fits
 
 Other tools cover parts of this workflow, and some go much further in editing

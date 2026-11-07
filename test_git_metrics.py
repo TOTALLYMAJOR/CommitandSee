@@ -51,6 +51,20 @@ class GitMetricsIntegrationTests(unittest.TestCase):
         )
         self.commit_count = 0
 
+    def test_chart_events_reconcile_and_keep_safe_github_origin(self):
+        self.git("remote", "add", "origin", "git@github.com:octocat/example.git")
+        self.write("story.txt", "one\ntwo\n")
+        self.git("add", "story.txt")
+        self.git("commit", "-m", "Story")
+        row = collect_repository(self.repo)
+        self.assertEqual(row["github_url"], "https://github.com/octocat/example")
+        event, = row["history"]["events"]
+        self.assertEqual(event["sha"], self.git("rev-parse", "HEAD"))
+        self.assertEqual(event["added"], row["history"]["total_added"])
+        self.assertEqual(event["added"], 2)
+        self.git("remote", "set-url", "origin", "https://secret@github.com/octocat/example")
+        self.assertIsNone(collect_repository(self.repo)["github_url"])
+
     def git(self, *arguments, cwd=None, env=None, check=True):
         result = subprocess.run(
             ["git", *map(str, arguments)],

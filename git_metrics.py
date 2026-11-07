@@ -517,6 +517,22 @@ def _registered_worktrees(git: _Git) -> list[dict]:
     return records
 
 
+def _github_origin(git):
+    """Only export a canonical GitHub URL; discard all other remote strings."""
+    try:
+        raw = git.run("config", "--get", "remote.origin.url", allow=(0, 1), limit=4096).decode().strip()
+    except (GitError, UnicodeError):
+        return None
+    match = re.fullmatch(r"(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)"
+                         r"([A-Za-z0-9][A-Za-z0-9-]{0,38})/([A-Za-z0-9_.-]{1,100})", raw, re.I)
+    if match:
+        owner, repo = match.groups()
+        repo = repo.removesuffix(".git")
+        if repo and repo not in {".", ".."}:
+            return f"https://github.com/{owner.lower()}/{repo.lower()}"
+    return None
+
+
 def _history(git: _Git, *, ref: str, head: str | None, days: int, zone,
              zone_name: str, now: dt.datetime, max_commits: int,
              patterns: tuple[str, ...], shallow: bool) -> dict:
@@ -528,7 +544,11 @@ def _history(git: _Git, *, ref: str, head: str | None, days: int, zone,
     result = {"ref": ref, "head": head, "days": days, "timezone": zone_name,
               "mode": HISTORY_MODE, "commits": 0, "total_added": 0, "total_deleted": 0,
               "binary_changes": 0, "truncated": False, "shallow": shallow,
-              "daily": [], "weekly": [], "recent": []}
+              "daily": [], "weekly": [], "recent": [], "events": []}
+    for key, bucket in daily.items():
+        date = dt.date.fromisoformat(key)
+        bucket["start"] = int(dt.datetime.combine(date, dt.time.min, zone).timestamp())
+        bucket["end"] = int(dt.datetime.combine(date + dt.timedelta(days=1), dt.time.min, zone).timestamp())
     records = []
     if head:
         # Shallow boundaries look like roots to Git; their full trees are not new work.
@@ -554,6 +574,8 @@ def _history(git: _Git, *, ref: str, head: str | None, days: int, zone,
             result["total_" + field] += record[field]
         result["commits"] += 1
         result["binary_changes"] += record["binary_changes"]
+        result["events"].append({k: record[k] for k in ("epoch", "sha", "added", "deleted")}
+                                | {"subject": record["subject"][:180]})
         eligible.append(record)
     weeks = {}
     for key, bucket in daily.items():
@@ -680,6 +702,7 @@ def collect_repository(path, *, name=None, ref="HEAD", days=180,
         result["git_version"] = version
         git = _Git(directory, no_lazy_fetch)
         common = Path(os.fsdecode(git.run("rev-parse", "--path-format=absolute", "--git-common-dir").rstrip(b"\n"))).resolve()
+        result["github_url"] = _github_origin(git)
         result.update(common_dir=str(common), id=hashlib.sha256(os.fsencode(common)).hexdigest()[:20])
         # Older versions do not honor --no-lazy-fetch. Refuse promisor-backed
         # repositories there instead of accidentally acquiring missing objects.

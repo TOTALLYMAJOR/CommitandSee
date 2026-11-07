@@ -23,6 +23,9 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 .metric-icon{position:absolute;right:12px;top:14px;width:28px;height:28px;float:none;margin:0}.metric-icon svg{width:15px;height:15px}.metric-label{padding-right:28px;min-height:34px}.metric-value{font-size:25px;white-space:nowrap}.refresh-icon{display:none}#topo-canvas{opacity:.3}.panel-symbol{margin-bottom:14px}.panel-sub{margin-left:50px}@media(max-width:640px){.panel-sub{margin-left:0}.metric-label{font-size:12px}.metric-value{font-size:23px}}
+.chart-controls{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:0 0 12px}.chart-controls input{color-scheme:dark;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text)}.chart-controls [hidden]{display:none}.chart-body .chart-hit{cursor:pointer}#point-dialog{width:min(760px,calc(100% - 24px));max-height:85dvh;overflow:auto}.point-row{padding:12px 0;border-top:1px solid var(--border);display:grid;gap:4px}.point-row button{justify-self:start}.point-row a{overflow-wrap:anywhere}
+#selection-panel .selection-body{padding:0 20px 20px}#selection-panel .selection-body .panel-sub{margin-left:0}.selection-share{display:flex;align-items:center;gap:8px}.selection-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px}.selection-layout h3{margin:16px 0 8px}.selection-layout p{font-size:12px;color:var(--muted)}.selection-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}.selection-actions label{font-size:12px;color:var(--muted)}#selection-totals{font-size:20px;color:var(--text);font-variant-numeric:tabular-nums}.selection-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;overflow-wrap:anywhere}.selection-item:last-child{border-bottom:0}.selection-item small{display:block;color:var(--muted);margin-top:3px}.selection-item .tiny-button{display:block;margin-top:4px}.selection-comparison{display:grid;grid-template-columns:1fr auto auto;gap:6px 12px;font-size:12px;font-variant-numeric:tabular-nums;margin-top:10px}.chart-body{touch-action:pan-y}.chart-selection{fill:#58a6ff25;stroke:#58a6ff;pointer-events:none}#reset-zoom[hidden]{display:none}
+@media(max-width:640px){.selection-layout{grid-template-columns:1fr;gap:6px}#selection-panel .selection-body{padding:15px}.selection-comparison{font-size:11px}.chart-foot{flex-wrap:wrap}}
 </style>
 <style>
 /* GitHub connection uses the same local dashboard palette and native dialog. */
@@ -58,17 +61,29 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
   </div>
   <div class="scope-note"><span id="selection-note"></span><span id="timezone-note"></span></div>
   <section class="metrics" id="metrics" aria-label="Selected repository metrics"></section>
+  <div class="chart-controls"><div class="field"><label for="interval-select">Chart interval</label><select id="interval-select"><option value="auto">Daily commits / weekly lines</option><option value="week">Week</option><option value="day">Day</option><option value="60">Hour</option><option value="15">15 minutes</option></select></div><div class="field" id="chart-day-field" hidden><label for="chart-day">Chart date</label><input id="chart-day" type="date"></div><button id="reset-zoom" type="button" hidden>Reset zoom</button></div>
   <section class="charts" aria-label="Git history charts">
     <article class="panel">
       <div class="panel-head"><div><h2>Commit activity</h2><p class="panel-sub">Commits per day across the selected refs</p></div><div class="legend"><span><i class="swatch" aria-hidden="true"></i>Commits</span></div></div>
-      <div class="chart-body" id="commits-chart"></div><div class="chart-foot"><span id="commits-caption"></span><span>Hover or use ← →</span></div>
+      <div class="chart-body" id="commits-chart"></div><div class="chart-foot"><span id="commits-caption"></span><span>Drag or Shift + arrows to select · Enter to zoom</span></div>
       <details class="data-disclosure"><summary>View daily data</summary><div class="data-scroll" id="daily-data"></div></details>
     </article>
     <article class="panel">
       <div class="panel-head"><div><h2>Code frequency</h2><p class="panel-sub">Lines added and deleted per week</p></div><div class="legend"><span><i class="swatch" aria-hidden="true"></i>Additions</span><span><i class="swatch red" aria-hidden="true"></i>Deletions</span></div></div>
-      <div class="chart-body" id="frequency-chart"></div><div class="chart-foot"><span id="frequency-caption"></span><span>Weeks start Monday</span></div>
+      <div class="chart-body" id="frequency-chart"></div><div class="chart-foot"><span id="frequency-caption"></span><span>Drag or Shift + arrows to select · Enter to zoom</span></div>
       <details class="data-disclosure"><summary>View weekly data</summary><div class="data-scroll" id="weekly-data"></div></details>
     </article>
+  </section>
+  <section class="panel section-gap" id="selection-panel" aria-labelledby="selection-title">
+    <div class="panel-head"><div><h2 id="selection-title">About this selection</h2><p class="panel-sub" id="selection-period"></p></div></div>
+    <div class="selection-body">
+      <p id="selection-totals"></p><p class="panel-sub" id="selection-coverage"></p>
+      <div class="selection-actions"><button id="selection-details" type="button">Inspect commits</button><div class="selection-share"><label for="share-metric">Share of</label><select id="share-metric"><option value="added">Added lines</option><option value="deleted">Deleted lines</option><option value="changed">Changed lines</option></select></div></div>
+      <div class="selection-layout">
+        <div><h3>Largest contributors</h3><p id="selection-insight"></p><div id="selection-contributors"></div><h3>Previous period</h3><div id="selection-comparison"></div></div>
+        <div><h3>Pull requests</h3><p id="selection-pr-note">Look up commit associations on GitHub to group this selection.</p><div class="selection-actions"><button id="group-prs" type="button">Group by PR</button></div><p class="panel-sub" id="selection-pr-status" role="status"></p><div id="selection-pr-groups"></div></div>
+      </div>
+    </div>
   </section>
   <section class="panel section-gap" aria-labelledby="repos-heading"><div class="panel-head"><div><h2 id="repos-heading">Repository overview</h2><p class="panel-sub">History follows the configured ref. Working state includes registered worktrees.</p></div><span class="chip" id="repo-count"></span></div><div class="table-wrap" id="repository-table"></div></section>
   <section class="panel section-gap" aria-labelledby="work-heading"><div class="panel-head"><div><h2 id="work-heading">Work to review</h2><p class="panel-sub">Local changes, branch candidates, and saved work.</p></div><label class="compact-check"><input type="checkbox" id="show-all">Include clean / integrated</label></div>
@@ -79,6 +94,7 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
   <details class="panel details-panel"><summary>How these metrics are counted</summary><div class="method-copy"><div><h3>Committed history</h3><p>Each repository uses its selected ref. Commit and line charts use non-merge commits reachable from that ref, grouped by commit time in the displayed timezone. They measure recorded churn, not total source-code size or product completion. Binary changes have no numeric LOC. Shallow, truncated, or unavailable history remains marked as partial.</p><p>Filtering the history window changes the charts and their totals. Current worktree, branch, and stash observations stay current to the snapshot.</p></div><div><h3>Pending work</h3><p>Ahead / behind comparisons use locally cached upstream refs. Remote branches shown here are cached refs too; the dashboard does not fetch, push, or merge. Branch integration is an ancestry check against the selected ref. Squash or rebase merges, cherry-picks, and PR state need separate interpretation.</p><p>Worktree LOC shows the tracked HEAD-to-working-tree delta. Staged and unstaged counts are separate and are not added together. Untracked files are listed separately. Branch-tip age and first observation time are clues for review, not proof that work was forgotten.</p></div></div></details>
   <footer class="footer"><span>Local checkouts read-only · GitHub history uses dashboard-owned cache</span><span id="footer-observation"></span></footer>
 <p id="repository-message" class="success-note" role="status"></p>
+<dialog id="point-dialog" aria-labelledby="point-title"><h2 id="point-title">Chart details</h2><p id="point-summary"></p><div id="point-list"></div><div class="dialog-actions"><button id="point-close" type="button">Close</button></div></dialog>
 <dialog id="add-dialog" aria-labelledby="add-title"><form id="add-form"><h2 id="add-title">Add a repository</h2><p id="add-help">Add a public GitHub repository by URL. Published default-branch history is downloaded into the dashboard cache; local work is not observed.</p><label for="add-source">Repository source</label><select id="add-source"><option value="public">Public GitHub repository</option><option value="local">Local checkout</option></select><label id="add-path-label" for="add-path">Public GitHub URL</label><input id="add-path" name="path" required maxlength="4096" placeholder="https://github.com/owner/repository" autocomplete="off"><label for="add-name">Display name <span class="muted">(optional)</span></label><input id="add-name" name="name" maxlength="160" autocomplete="off"><label for="add-product">Product <span class="muted">(optional)</span></label><input id="add-product" name="product" maxlength="160" autocomplete="off"><p id="add-status" role="alert"></p><div class="dialog-actions"><button id="add-cancel" type="button">Cancel</button><button id="add-submit" type="submit">Add repository</button></div></form></dialog>
 <dialog id="github-dialog" aria-labelledby="github-title" aria-describedby="github-session-note">
   <h2 id="github-title" tabindex="-1">GitHub repositories</h2>
@@ -134,26 +150,506 @@ function makeMetric(label,value,detail,tone='',prefix=''){const card=el('article
 function renderMetrics(repos,days){const available=repos.filter(historyReady),partial=repos.some(historyPartial),hNote=available.length?'Selected window'+(partial?' · partial coverage':''):'History unavailable';const work=repos.filter(r=>sourceReadable(r,'worktrees')).flatMap(r=>asArray(r.worktrees)),known=work.filter(w=>typeof w.dirty==='boolean'),workPartial=repos.some(r=>sourceState(r,'worktrees')!=='ok')||known.length<work.length,dirty=known.filter(w=>w.dirty).length;const branches=repos.filter(r=>sourceReadable(r,'branches')).flatMap(r=>asArray(r.branches)),compared=branches.filter(b=>finite(b.ahead)),ahead=compared.filter(b=>b.ahead>0).length,branchPartial=repos.some(r=>sourceState(r,'branches')!=='ok')||branches.some(b=>b.upstream&&!finite(b.ahead)),stashRepos=repos.filter(r=>knownCount(r,'stashes')!==null),stashPartial=repos.some(r=>sourceState(r,'stashes')!=='ok'),stashes=stashRepos.reduce((a,r)=>a+r.stashes.length,0);$('metrics').replaceChildren(makeMetric('Commits',available.length?sum(days,'commits'):null,hNote,'blue',partial?'≥':''),makeMetric('Lines added',available.length?sum(days,'added'):null,hNote,'green',partial?'≥':'+'),makeMetric('Lines deleted',available.length?sum(days,'deleted'):null,hNote,'red',partial?'≥':'−'),makeMetric('Dirty worktrees',repos.length&&(dirty>0||!workPartial)?dirty:null,workPartial?'Incomplete worktree observation':'Includes untracked files','amber',workPartial?'≥':''),makeMetric('Branches ahead',compared.length&&(ahead>0||!branchPartial)?ahead:null,compared.length+' compared · cached upstream'+(branchPartial?' · partial':''),'blue',branchPartial?'≥':''),makeMetric('Stashes',repos.length&&(stashes>0||!stashPartial)?stashes:null,stashPartial?'Incomplete stash observation':'Saved work across repositories','',stashPartial?'≥':''));}
 function niceStep(maximum,divisions=4,integer=false){const raw=Math.max(maximum,1)/divisions,power=10**Math.floor(Math.log10(raw)),scale=raw/power;const step=(scale<=1?1:scale<=2?2:scale<=5?5:10)*power;return integer?Math.max(1,step):step;}
 function empty(host,title,copy){const box=el('div','empty');box.append(el('strong','',title),el('p','',copy));host.append(box);}
-function chart(hostId,rows,type){const host=$(hostId),previous=host.querySelector('[role=slider]'),focused=previous===document.activeElement||host===document.activeElement,savedDate=previous?.dataset.date;host.replaceChildren();if(!rows.length){empty(host,'No readable history','Check repository coverage, configured paths, and the selected ref.');if(focused){host.tabIndex=-1;host.focus({preventScroll:true});}return;}
+function intervalFor(type){
+  const interval=$('interval-select').value;
+  if(zoomRange&&interval==='auto')return zoomInterval(zoomRange);
+  return interval==='auto'?(type==='line'?'day':'week'):interval;
+}
+const intervalLabel={day:'Daily',week:'Weekly',60:'Hourly',15:'15-minute'};
+const clockFormats=new Map();
+function chartClock(epoch,withDate=false){
+  const zone=data.repositories?.find(r=>historyReady(r)&&r.history.timezone)?.history.timezone||data.timezone||'UTC';
+  const key=zone+'/'+withDate;
+  if(!clockFormats.has(key)){
+    const options={hour:'numeric',minute:'2-digit',timeZoneName:'short'};
+    if(withDate)Object.assign(options,{year:'numeric',month:'short',day:'numeric',second:'2-digit'});
+    try{clockFormats.set(key,new Intl.DateTimeFormat('en-US',{...options,timeZone:zone}));}
+    catch{clockFormats.set(key,new Intl.DateTimeFormat('en-US',{...options,timeZone:'UTC'}));}
+  }
+  return clockFormats.get(key).format(epoch*1000);
+}
+function periodLabel(row,long=false){
+  if(row.interval==='selection')return rangeLabel(row);
+  if(row.interval==='day'||row.interval==='week'||row.start===undefined)return (row.interval==='week'?'Week of ':'')+dayLabel(row.date,long);
+  const time=chartClock(row.start);
+  const date=dateKey(row.start*1000);
+  const spansDays=zoomRange&&dateKey(zoomRange.start*1000)!==dateKey((zoomRange.end-1)*1000);
+  return long?dayLabel(date,true)+' · '+time:spansDays?dayLabel(date)+' · '+time:time;
+}
+function unzoomedChartRows(repos,days,interval){
+  if(interval==='day'||interval==='week'){
+    const rows=interval==='week'?weeksFrom(days):days;
+    return rows.map(row=>({...row,interval}));
+  }
+  const date=$('chart-day').value, minutes=Number(interval), rows=[];
+  const sources=repos.filter(historyReady).map(repo=>({repo,day:repo.history.daily.find(d=>d.date===date)})).filter(s=>s.day);
+  if(!sources.length||sources.some(({repo,day})=>!Array.isArray(repo.history.events)||!finite(day.start)||!finite(day.end)))return rows;
+  const {start,end}=sources[0].day;
+  if(sources.some(s=>s.day.start!==start||s.day.end!==end))return rows;
+  for(let t=start;t<end;t+=minutes*60)rows.push({date:new Date(t*1000).toISOString(),start:t,end:Math.min(end,t+minutes*60),interval,commits:0,added:0,deleted:0});
+  for(const {repo} of sources)for(const event of repo.history.events){
+    if(event.epoch<start||event.epoch>=end)continue;
+    const row=rows[Math.floor((event.epoch-start)/(minutes*60))];
+    row.commits++;row.added+=event.added;row.deleted+=event.deleted;
+  }
+  return rows;
+}
+function configureChartDate(days){
+  const input=$('chart-day'), intraday=['60','15'].includes($('interval-select').value);
+  $('chart-day-field').hidden=!intraday||Boolean(zoomRange);
+  if(!days.length)return;
+  input.min=days[0].date;input.max=days.at(-1).date;
+  if(!input.value||input.value<input.min||input.value>input.max)input.value=days.filter(d=>d.commits).at(-1)?.date||input.max;
+}
+function pointContributors(row){
+  const repos=selected(), floor=dateFloor(repos), result=[];
+  for(const repo of repos.filter(historyReady)){
+    let start=row.start,end=row.end;
+    if(start===undefined){
+      const last=new Date(row.date+'T12:00:00Z');last.setUTCDate(last.getUTCDate()+(row.interval==='week'?7:1));
+      const next=last.toISOString().slice(0,10);
+      const days=daysFor(repo,floor).filter(d=>d.date>=row.date&&d.date<next);
+      start=days[0]?.start;end=days.at(-1)?.end;
+    }
+    if(!finite(start)||!finite(end))continue;
+    for(const event of asArray(repo.history.events))if(event.epoch>=start&&event.epoch<end)result.push({repo,event});
+  }
+  return result.sort((a,b)=>(b.event.added+b.event.deleted)-(a.event.added+a.event.deleted)||b.event.epoch-a.event.epoch);
+}
+let zoomRange=null, zoomBefore=null, selectedRange=null, selectionScope='', selectionModel=null;
+let groupingController=null, groupingVersion=0, groupingBusy=false;
+const pullCache=new Map(), selectionPulls=new Map();
+function selectionScopeKey(){
+  return JSON.stringify([data.github_session_id,data.github_generation,$('product-select').value,$('repo-select').value,$('range-select').value,
+    selected().map(r=>[r.id,r.head,r.ref,r.exclude_globs,r.github_generation,sourceState(r,'history')])]);
+}
+function cancelGrouping(clearCache=false){
+  groupingController?.abort();groupingController=null;groupingBusy=false;groupingVersion++;
+  selectionPulls.clear();
+  if(clearCache)pullCache.clear();
+}
+function resetSelection(clearCache=false){
+  cancelGrouping(clearCache);selectedRange=null;zoomRange=null;
+  if(zoomBefore){$('interval-select').value=zoomBefore.interval;$('chart-day').value=zoomBefore.day;zoomBefore=null;}
+}
+function historyBounds(repo){
+  const rows=asArray(repo.history?.daily), first=rows[0], last=rows.at(-1);
+  const observed=Date.parse(repo.history?.collected_at||repo.collected_at||data.generated_at)/1000;
+  if(!finite(first?.start)||!finite(last?.end)||!finite(observed))return null;
+  return {start:first.start,end:Math.min(last.end,observed)};
+}
+function visibleBounds(repos){
+  const rows=repos.filter(historyReady).flatMap(repo=>daysFor(repo,dateFloor(repos)));
+  let start=Infinity,end=-Infinity;
+  for(const row of rows)if(finite(row.start)&&finite(row.end)){
+    start=Math.min(start,row.start);end=Math.max(end,row.end);
+  }
+  const latest=repos.filter(historyReady).map(historyBounds).filter(Boolean);
+  for(const bounds of latest)end=Math.min(end,bounds.end);
+  if(!zoomRange&&['60','15'].includes($('interval-select').value)){
+    const day=rows.find(row=>row.date===$('chart-day').value);
+    if(day){start=Math.max(start,day.start);end=Math.min(end,day.end);}
+  }
+  return finite(start)&&finite(end)&&end>start?{start,end}:null;
+}
+function rowBounds(row){
+  if(finite(row.start)&&finite(row.end))return {start:row.start,end:row.end};
+  const next=new Date(row.date+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+(row.interval==='week'?7:1));
+  const until=next.toISOString().slice(0,10);
+  let start=Infinity,end=-Infinity;
+  for(const repo of selected().filter(historyReady))for(const day of daysFor(repo,dateFloor(selected()))){
+    if(day.date>=row.date&&day.date<until&&finite(day.start)&&finite(day.end)){
+      start=Math.min(start,day.start);end=Math.max(end,day.end);
+    }
+  }
+  return finite(start)&&finite(end)?{start,end}:null;
+}
+function rangeLabel(range){
+  return chartClock(range.start,true)+' – '+chartClock(range.end,true);
+}
+function rangeItems(range,repos=selected()){
+  if(!range)return [];
+  const result=[];
+  for(const repo of repos.filter(historyReady))for(const event of asArray(repo.history.events)){
+    if(event.epoch>=range.start&&event.epoch<range.end)result.push({repo,event});
+  }
+  return result;
+}
+function rangeTotals(items){
+  return {commits:items.length,added:items.reduce((n,item)=>n+item.event.added,0),deleted:items.reduce((n,item)=>n+item.event.deleted,0)};
+}
+function rangeComplete(range,repos){
+  return repos.length>0&&repos.every(repo=>{
+    const bounds=historyBounds(repo);
+    if(historyPartial(repo)||!Array.isArray(repo.history?.events)||!bounds||bounds.start>range.start||bounds.end<range.end)return false;
+    let covered=range.start;
+    for(const day of repo.history.daily){
+      if(day.end<=covered)continue;
+      if(!finite(day.start)||!finite(day.end)||day.start>covered)return false;
+      covered=day.end;
+      if(covered>=range.end)return true;
+    }
+    return false;
+  });
+}
+function metricValue(event){
+  return $('share-metric').value==='changed'?event.added+event.deleted:event[$('share-metric').value];
+}
+function shareText(value,total){
+  return total>0?(value/total*100).toLocaleString('en-US',{maximumFractionDigits:1})+'%':'—';
+}
+function itemKey(item){return item.repo.id+'/'+item.event.sha;}
+function zoomInterval(range){
+  const hours=(range.end-range.start)/3600;
+  return hours<=8?'15':hours<=72?'60':hours<=90*24?'day':'week';
+}
+function chartRows(repos,days,interval){
+  if(!zoomRange)return unzoomedChartRows(repos,days,interval);
+  if(repos.some(repo=>historyReady(repo)&&!Array.isArray(repo.history.events)))return [];
+  let rows;
+  if(interval==='day'||interval==='week'){
+    rows=unzoomedChartRows(repos,days,interval).map(row=>({...row,...rowBounds(row)}));
+  }else{
+    rows=[];const step=Number(interval)*60;
+    if((zoomRange.end-zoomRange.start)/step>2000)return [];
+    for(let start=zoomRange.start;start<zoomRange.end;start+=step){
+      rows.push({date:new Date(start*1000).toISOString(),start,end:start+step,interval});
+    }
+  }
+  // Keep charts bounded even when a very wide selection uses a fine interval.
+  if(rows.length>2000)return [];
+  const clipped=rows.filter(row=>row.end>zoomRange.start&&row.start<zoomRange.end).map(row=>({
+    ...row,start:Math.max(row.start,zoomRange.start),end:Math.min(row.end,zoomRange.end),commits:0,added:0,deleted:0
+  }));
+  const events=rangeItems(zoomRange,repos).sort((a,b)=>a.event.epoch-b.event.epoch);
+  let index=0;
+  for(const {event} of events){
+    while(index<clipped.length&&event.epoch>=clipped[index].end)index++;
+    const row=clipped[index];
+    if(row&&event.epoch>=row.start){row.commits++;row.added+=event.added;row.deleted+=event.deleted;}
+  }
+  return clipped;
+}
+function selectChartRange(first,last,zoom=false){
+  const left=rowBounds(first),right=rowBounds(last), visible=visibleBounds(selected());
+  if(!left||!right||!visible)return;
+  const range={start:Math.max(Math.min(left.start,right.start),visible.start),end:Math.min(Math.max(left.end,right.end),visible.end)};
+  if(range.end<=range.start)return;
+  cancelGrouping();selectedRange=range;
+  if(zoom){
+    if(!zoomBefore)zoomBefore={interval:$('interval-select').value,day:$('chart-day').value};
+    zoomRange=range;$('interval-select').value='auto';
+  }
+  render();
+}
+function renderComparison(range,totals,repos){
+  const host=$('selection-comparison');host.replaceChildren();
+  const duration=range.end-range.start, prior={start:range.start-duration,end:range.start};
+  if(!rangeComplete(range,repos)||!rangeComplete(prior,repos)){
+    host.append(el('p','','A complete preceding period is unavailable for this selection. Choose a shorter range with complete history.'));
+    return;
+  }
+  const before=rangeTotals(rangeItems(prior,repos));
+  host.append(el('p','',rangeLabel(prior)+' · Same elapsed duration'));
+  const grid=el('div','selection-comparison');
+  for(const text of ['Metric','Selected','Previous'])grid.append(el('strong','',text));
+  for(const [key,label] of [['commits','Commits'],['added','Added'],['deleted','Deleted']]){
+    grid.append(el('span','',label),el('span','',num(totals[key])),el('span','',num(before[key])));
+  }
+  host.append(grid);
+  const metric=$('share-metric').value, current=metric==='changed'?totals.added+totals.deleted:totals[metric],
+    previous=metric==='changed'?before.added+before.deleted:before[metric];
+  const label=metric==='changed'?'Changed lines':metric==='added'?'Added lines':'Deleted lines';
+  if(previous>0){
+    const delta=(current-previous)/previous*100;
+    host.append(el('p','',label+' '+(delta>0?'increased ':delta<0?'decreased ':'changed ')+Math.abs(delta).toLocaleString('en-US',{maximumFractionDigits:1})+'% compared with the previous period.'));
+  }else host.append(el('p','',current?'The previous period has zero '+label.toLowerCase()+'. A percentage comparison is unavailable.':'Both periods have zero '+label.toLowerCase()+'.'));
+}
+function renderSelection(){
+  const repos=selected(),scope=selectionScopeKey();
+  if(scope!==selectionScope){resetSelection(true);selectionScope=scope;}
+  const range=selectedRange||zoomRange||visibleBounds(repos),host=$('selection-contributors');
+  $('reset-zoom').hidden=!(zoomRange||selectedRange);
+  $('reset-zoom').textContent=zoomRange?'Reset zoom':'Clear selection';
+  host.replaceChildren();
+  $('selection-details').disabled=!range;
+  if(!range){
+    selectionModel=null;$('selection-period').textContent='History detail unavailable';
+    $('selection-totals').textContent='Collect a fresh snapshot to inspect this history.';
+    $('selection-coverage').textContent='Timestamped commit details are required.';
+    $('selection-insight').textContent='';$('selection-comparison').replaceChildren();
+    renderPullGroups();return;
+  }
+  const items=rangeItems(range,repos), totals=rangeTotals(items), complete=rangeComplete(range,repos);
+  const recorded=repos.filter(r=>historyReady(r)&&Array.isArray(r.history.events)).length;
+  selectionModel={range,items,totals,complete};
+  $('selection-period').textContent=rangeLabel(range);
+  $('selection-totals').textContent=recorded?num(totals.commits)+(totals.commits===1?' commit':' commits')+' · +'+num(totals.added)+' / −'+num(totals.deleted):'Commit details unavailable';
+  $('selection-coverage').textContent=(complete?'Complete collected coverage':'Partial detail coverage')+' · '+recorded+'/'+repos.length+' repositories with timestamped details · '+num(items.length)+' commits captured';
+  $('selection-details').disabled=!items.length;
+  const ranked=[...items].sort((a,b)=>metricValue(b.event)-metricValue(a.event)),total=ranked.reduce((n,item)=>n+metricValue(item.event),0),leaders=ranked.slice(0,3);
+  const metric=$('share-metric').selectedOptions[0].text.toLowerCase();
+  $('selection-insight').textContent=total?leaders.length+' '+(leaders.length===1?'commit accounts':'commits account')+' for '+shareText(leaders.reduce((n,item)=>n+metricValue(item.event),0),total)+' of '+(complete?'':'captured ')+metric+'.':'No measured '+metric+' in this selection.';
+  for(const {repo,event} of leaders){
+    const entry=el('div','selection-item');
+    entry.append(el('strong','',event.subject||event.sha.slice(0,12)),el('small','',repo.name+' · '+shareText(metricValue(event),total)+' · +'+num(event.added)+' / −'+num(event.deleted)));
+    const button=el('button','tiny-button','Inspect this moment');
+    button.onclick=()=>openPoint({start:event.epoch,end:event.epoch+1,interval:'selection',...rangeTotals(rangeItems({start:event.epoch,end:event.epoch+1}))});
+    entry.append(button);host.append(entry);
+  }
+  renderComparison(range,totals,repos);renderPullGroups();
+}
+async function requestCommitPulls(item,signal){
+  const scope=selectionScopeKey(),key=scope+'/'+itemKey(item),cached=pullCache.get(key);
+  if(cached&&Date.now()-cached.checkedAt<300000)return cached;
+  const controller=new AbortController(),abort=()=>controller.abort();
+  signal?.addEventListener('abort',abort,{once:true});
+  if(signal?.aborted)controller.abort();
+  const timeout=setTimeout(abort,15000);
+  try{
+    const response=await fetch('/api/commit-pulls',{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({repository:item.repo.id,sha:item.event.sha})});
+    const body=await response.json();
+    if(!response.ok)throw new Error(body.error?.message||'Lookup unavailable.');
+    if(!Array.isArray(body.pulls)||body.pulls.some(pr=>!Number.isSafeInteger(pr.number)||pr.number<1||typeof pr.title!=='string'))throw new Error('Invalid PR response.');
+    if(signal?.aborted||scope!==selectionScopeKey())throw new DOMException('Selection changed','AbortError');
+    const result={...body,status:'checked',checkedAt:Date.now()};
+    if(pullCache.size>=1000)pullCache.delete(pullCache.keys().next().value);
+    pullCache.set(key,result);return result;
+  }finally{clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
+}
+function renderPullGroups(){
+  const host=$('selection-pr-groups'),button=$('group-prs'),status=$('selection-pr-status');
+  host.replaceChildren();
+  const items=selectionModel?.items||[],groups=new Map(),eligible=items.filter(item=>githubBase(item.repo)&&/^[a-f0-9]{40}$/.test(item.event.sha));
+  let checked=0,unavailable=0;
+  for(const item of items){
+    const result=selectionPulls.get(itemKey(item)),base=githubBase(item.repo);
+    let key='pending',label='Not looked up',url=null;
+    if(!base){key='unsupported';label='No GitHub link';}
+    else if(result?.status==='error'){key='error';label='Lookup unavailable';unavailable++;}
+    else if(result){
+      checked++;
+      if(result.limited){key='limited';label='Association list incomplete';}
+      else if(result.pulls.length===1){const pr=result.pulls[0];url=base+'/pull/'+pr.number;key=url;label=base.split('/').slice(-2).join('/')+' #'+pr.number+' '+pr.title;}
+      else if(result.pulls.length>1){key='ambiguous';label='Multiple associated PRs';}
+      else{key='none';label='No associated PR found';}
+    }
+    const group=groups.get(key)||{label,url,commits:0,added:0,deleted:0};
+    group.commits++;group.added+=item.event.added;group.deleted+=item.event.deleted;groups.set(key,group);
+  }
+  const remaining=eligible.filter(item=>!selectionPulls.has(itemKey(item))).length;
+  button.textContent=checked||unavailable?'Look up next '+Math.min(20,remaining)+' commits':'Group by PR';
+  if(!remaining)button.textContent=unavailable?'Retry unavailable lookups':'Refresh PR associations';
+  button.disabled=groupingBusy||!data.live||!eligible.length;
+  if(groupingBusy)button.textContent='Looking up PRs…';
+  $('selection-pr-note').textContent=data.live?'Uses GitHub associations for captured commits. Shared or unresolved associations have separate totals.':'Live PR grouping requires the local dashboard. Commit details include browser search links.';
+  status.textContent=items.length?checked+' / '+items.length+' commits checked'+(unavailable?' · '+unavailable+' unavailable':'')+(remaining?' · '+remaining+' awaiting lookup':''):'No commits selected.';
+  const checkedTimes=[...selectionPulls.values()].map(result=>result.checkedAt).filter(finite);
+  if(checkedTimes.length)status.textContent+=' · Last checked '+stamp(new Date(checkedTimes.reduce((latest,time)=>Math.max(latest,time),0)).toISOString());
+  if(!checked&&!unavailable&&eligible.length)return;
+  const total=items.reduce((n,item)=>n+metricValue(item.event),0);
+  for(const group of [...groups.values()].sort((a,b)=>metricValue(b)-metricValue(a))){
+    const row=el('div','selection-item');
+    row.append(group.url?pointLink(group.label,group.url):el('strong','',group.label),
+      el('small','',group.commits+(group.commits===1?' commit':' commits')+' · '+shareText(metricValue(group),total)+' of captured '+$('share-metric').selectedOptions[0].text.toLowerCase()+' · +'+num(group.added)+' / −'+num(group.deleted)));
+    host.append(row);
+  }
+}
+async function groupSelectionPulls(){
+  if(groupingBusy||!selectionModel)return;
+  const items=[...selectionModel.items].sort((a,b)=>metricValue(b.event)-metricValue(a.event));
+  const eligible=items.filter(item=>githubBase(item.repo)&&/^[a-f0-9]{40}$/.test(item.event.sha));
+  let pending=eligible.filter(item=>!selectionPulls.has(itemKey(item)));
+  const failed=eligible.filter(item=>selectionPulls.get(itemKey(item))?.status==='error');
+  if(!pending.length&&!failed.length){
+    for(const item of eligible)pullCache.delete(selectionScopeKey()+'/'+itemKey(item));
+    selectionPulls.clear();pending=eligible;
+  }
+  const batch=(pending.length?pending:failed).slice(0,20);
+  if(!batch.length)return;
+  groupingController=new AbortController();const controller=groupingController,version=++groupingVersion;
+  groupingBusy=true;renderPullGroups();
+  try{
+    for(const item of batch){
+      if(controller.signal.aborted||version!==groupingVersion)return;
+      try{
+        const result=await requestCommitPulls(item,controller.signal);
+        if(version!==groupingVersion)return;
+        selectionPulls.set(itemKey(item),result);
+      }catch(error){
+        if(controller.signal.aborted||version!==groupingVersion)return;
+        selectionPulls.set(itemKey(item),{status:'error'});
+        // Pause this batch on provider/access failure; leave the rest available for retry.
+        break;
+      }
+      renderPullGroups();
+    }
+  }finally{
+    if(version===groupingVersion){groupingBusy=false;groupingController=null;renderPullGroups();}
+  }
+}
+$('group-prs').onclick=groupSelectionPulls;
+$('share-metric').onchange=renderSelection;
+$('selection-details').onclick=()=>{if(selectionModel)openPoint({...selectionModel.range,interval:'selection',...selectionModel.totals});};
+$('reset-zoom').onclick=()=>{resetSelection();render();$('interval-select').focus();};
+function pointLink(label,url){
+  const link=el('a','',label);link.href=url;link.target='_blank';link.rel='noopener noreferrer';return link;
+}
+function githubBase(repo){
+  const url=repo.github_url||repo.url||'';
+  return /^https:\/\/github\.com\/[a-z\d-]+\/[a-z\d_.-]+$/i.test(url)&&!['.','..'].includes(url.split('/').at(-1))?url:null;
+}
+let pointVersion=0, pointRepos=[], pointController=null;
+function closePoint(){pointController?.abort();pointController=null;if($('point-dialog').open)$('point-dialog').close();pointVersion++;pointRepos=[];$('point-list').replaceChildren();}
+async function lookupPointPulls(repo,event,base,area,direct){
+  const version=pointVersion;
+  area.replaceChildren(el('span','muted','Checking GitHub…'));
+  const fallback=()=>pointLink('Search GitHub PRs for this commit',base+'/pulls?q='+encodeURIComponent('is:pr '+event.sha));
+  try{
+    const body=await requestCommitPulls({repo,event},pointController?.signal);
+    if(version!==pointVersion||!area.isConnected||!$('point-dialog').open)return;
+    area.replaceChildren();
+    if(!body.pulls.length)area.append(el('span','muted','GitHub found no associated PR.'));
+    for(const pr of body.pulls){
+      if(!Number.isSafeInteger(pr.number)||pr.number<=0)continue;
+      const url=base+'/pull/'+pr.number;
+      area.append(pointLink('#'+pr.number+' '+pr.title,url),document.createElement('br'));
+      if(direct&&body.pulls.length===1)location.assign(url);
+    }
+    if(body.limited)area.append(fallback());
+    return body.pulls.length===1&&!body.limited?base+'/pull/'+body.pulls[0].number:null;
+  }catch(error){
+    if(version!==pointVersion||!area.isConnected||!$('point-dialog').open)return;
+    area.replaceChildren(el('span','muted','PR lookup unavailable. '+error.message+' '),fallback());
+  }
+}
+function openPoint(row){
+  const bounds=rowBounds(row),visible=visibleBounds(selected());
+  if(bounds&&visible&&Math.min(bounds.end,visible.end)>Math.max(bounds.start,visible.start)){
+    cancelGrouping();selectedRange={start:Math.max(bounds.start,visible.start),end:Math.min(bounds.end,visible.end)};
+    renderSelection();
+  }
+  const items=pointContributors(row), dialog=$('point-dialog'), list=$('point-list');
+  closePoint();pointRepos=[...new Set(items.map(item=>item.repo))];
+  $('point-title').textContent=periodLabel(row,true);
+  $('point-summary').textContent=num(row.commits)+(row.commits===1?' commit':' commits')+' · +'+num(row.added)+' / −'+num(row.deleted)
+    +(items.length<row.commits?' · Some commit details are unavailable in this snapshot.':'')+(selected().some(historyPartial)?' · Partial history coverage.':'');
+  dialog.showModal();pointController=new AbortController();
+  const automatic=[], version=pointVersion;
+  let shown=0;
+  function more(){
+    const next=items.slice(shown,shown+40);shown+=next.length;
+    for(const {repo,event} of next){
+      const entry=el('div','point-row'), area=el('div','point-row-actions'), base=githubBase(repo);
+      entry.append(el('strong','',repo.name+' · '+chartClock(event.epoch,true)));
+      if(event.subject)entry.append(el('span','',event.subject));
+      entry.append(lineCounts(event.added,event.deleted));list.append(entry);
+      if(base&&/^[a-f0-9]{40}$/.test(event.sha)){
+        entry.append(pointLink('Commit '+event.sha.slice(0,8),base+'/commit/'+event.sha),area);
+        if(data.live){
+          const button=el('button','','Find PR on GitHub');button.onclick=()=>lookupPointPulls(repo,event,base,area,true);area.append(button);
+          if(items.length<=4&&items.length===row.commits)automatic.push(()=>lookupPointPulls(repo,event,base,area,false));
+        }else area.append(pointLink('Search GitHub PRs for this commit',base+'/pulls?q='+encodeURIComponent('is:pr '+event.sha)));
+      }else entry.append(el('span','muted',event.sha.slice(0,12)+' · No GitHub link available.'));
+    }
+    if(shown<items.length){const button=el('button','','Show more commits');button.onclick=()=>{button.remove();more();};list.append(button);}
+  }
+  more();
+  // A small bucket can link directly only if every commit resolves to the same PR.
+  if(automatic.length&&automatic.length===items.length){
+    void (async()=>{
+      const urls=[];
+      for(const lookup of automatic){
+        if(version!==pointVersion||!dialog.open)return;
+        urls.push(await lookup());
+      }
+      if(version===pointVersion&&dialog.open&&urls[0]&&urls.every(url=>url===urls[0]))location.assign(urls[0]);
+    })();
+  }
+}
+$('point-close').onclick=closePoint;
+$('point-dialog').addEventListener('cancel',closePoint);
+function chart(hostId,rows,type){const host=$(hostId),previous=host.querySelector('[role=slider]'),focused=previous===document.activeElement||host===document.activeElement,savedDate=previous?.dataset.date;host.replaceChildren();if(!rows.length){empty(host,'No readable history', zoomRange?'Choose a coarser interval or reset zoom to view this range.':['60','15'].includes(intervalFor(type))?'This date needs a snapshot with timestamped commit details.':'Check repository coverage, configured paths, and the selected ref.');if(focused){host.tabIndex=-1;host.focus({preventScroll:true});}return;}
   const W=720,H=270,m={left:52,right:17,top:20,bottom:37},pw=W-m.left-m.right,ph=H-m.top-m.bottom;
-  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,role:'group','aria-label':type==='line'?'Daily commit activity line chart':'Weekly added and deleted lines bar chart'}),title=svgEl('title',{},type==='line'?'Daily commits. Focus the plot and use left and right arrows, or open the daily data table.':'Weekly code frequency. Focus the plot and use left and right arrows, or open the weekly data table.');svg.append(title);host.append(svg);
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,role:'group','aria-label':intervalLabel[intervalFor(type)]+(type==='line'?' commit activity line chart':' added and deleted lines bar chart')}),title=svgEl('title',{},'Use arrow keys to inspect. Shift and arrow keys select a range; Enter zooms. Press Escape to cancel a selection.');svg.append(title);host.append(svg);
   const high=Math.max(...rows.map(r=>type==='line'?r.commits:r.added),0),low=type==='bar'?Math.max(...rows.map(r=>r.deleted),0):0,step=niceStep(high+low,type==='line'?4:5,type==='line');let ymax=Math.max(step,Math.ceil(high/step)*step),ymin=low?-Math.ceil(low/step)*step:0;
   const y=v=>m.top+(ymax-v)/(ymax-ymin)*ph,x=i=>type==='bar'?m.left+(i+.5)*pw/rows.length:m.left+(rows.length===1?pw/2:i*pw/(rows.length-1));
   for(let value=ymin;value<=ymax+step/10;value+=step){const yy=y(value);svg.append(svgEl('line',{x1:m.left,x2:W-m.right,y1:yy,y2:yy,class:value===0?'baseline':'gridline'}),svgEl('text',{x:m.left-11,y:yy+4,'text-anchor':'end'},compact.format(value)));}
-  const ticks=[...new Set(Array.from({length:Math.min(6,rows.length)},(_,i)=>Math.round(i*(rows.length-1)/Math.max(1,Math.min(6,rows.length)-1))))];for(const i of ticks)svg.append(svgEl('text',{x:x(i),y:H-11,'text-anchor':i===0?'start':i===rows.length-1?'end':'middle'},dayLabel(rows[i].date)));
+  const datedTimes=zoomRange&&['15','60'].includes(intervalFor(type))&&dateKey(zoomRange.start*1000)!==dateKey((zoomRange.end-1)*1000);
+  const tickCount=Math.min(rows.length,Math.max(2,Math.min(6,Math.floor(host.clientWidth/(datedTimes?180:80)))));
+  const ticks=[...new Set(Array.from({length:tickCount},(_,i)=>Math.round(i*(rows.length-1)/Math.max(1,tickCount-1))))];
+  for(const i of ticks)svg.append(svgEl('text',{x:x(i),y:H-11,'text-anchor':i===0?'start':i===rows.length-1?'end':'middle'},periodLabel(rows[i])));
   let point=null;
   if(type==='line'){const defs=svgEl('defs'),gradient=svgEl('linearGradient',{id:'commit-area',x1:0,y1:0,x2:0,y2:1});gradient.append(svgEl('stop',{offset:'0%','stop-color':'#3fb950','stop-opacity':'.23'}),svgEl('stop',{offset:'100%','stop-color':'#3fb950','stop-opacity':'.015'}));defs.append(gradient);svg.append(defs);const path=rows.map((r,i)=>(i?'L':'M')+x(i).toFixed(2)+','+y(r.commits).toFixed(2)).join(' ');svg.append(svgEl('path',{d:path+` L${x(rows.length-1)},${y(0)} L${x(0)},${y(0)} Z`,fill:'url(#commit-area)'}),svgEl('path',{d:path,fill:'none',stroke:'#3fb950','stroke-width':2.2,'stroke-linecap':'round','stroke-linejoin':'round'}));if(rows.length<=35)for(let i=0;i<rows.length;i++)svg.append(svgEl('circle',{cx:x(i),cy:y(rows[i].commits),r:2.2,fill:'#3fb950'}));point=svgEl('circle',{r:4.5,fill:'#7ee787',stroke:'#161b22','stroke-width':2,visibility:'hidden'});}
   else{const width=Math.max(1,Math.min(30,pw/rows.length*.65));for(let i=0;i<rows.length;i++){const r=rows[i];if(r.added>0)svg.append(svgEl('rect',{x:x(i)-width/2,y:y(r.added),width,height:y(0)-y(r.added),fill:'#3fb950',opacity:'.8',rx:1}));if(r.deleted>0)svg.append(svgEl('rect',{x:x(i)-width/2,y:y(0),width,height:y(-r.deleted)-y(0),fill:'#f85149',opacity:'.92',rx:1}));}}
-  const guide=svgEl('line',{x1:0,x2:0,y1:m.top,y2:H-m.bottom,class:'focusline',visibility:'hidden'});svg.append(guide);if(point)svg.append(point);const tip=el('div','chart-tip');host.append(tip);const hit=svgEl('rect',{x:m.left,y:m.top,width:pw,height:ph,fill:'transparent',class:'chart-hit',tabindex:0,role:'slider','aria-label':type==='line'?'Daily commit inspection':'Weekly LOC inspection','aria-valuemin':0,'aria-valuemax':rows.length-1,'aria-valuenow':0});svg.append(hit);let current=savedDate?rows.findIndex(r=>r.date>=savedDate):0;if(current<0)current=rows.length-1;hit.dataset.date=rows[current].date;
-  function inspect(index){current=Math.max(0,Math.min(rows.length-1,index));const r=rows[current],xx=x(current);hit.dataset.date=r.date;guide.setAttribute('x1',xx);guide.setAttribute('x2',xx);guide.setAttribute('visibility','visible');if(point){point.setAttribute('cx',xx);point.setAttribute('cy',y(r.commits));point.setAttribute('visibility','visible');}tip.replaceChildren(el('div','tip-date',(type==='bar'?'Week of ':'')+dayLabel(r.date,true)));const items=type==='line'?[['Commits',num(r.commits),'positive']]:[['Additions','+'+num(r.added),'positive'],['Deletions','−'+num(r.deleted),'negative'],['Commits',num(r.commits),'']];for(const [label,value,cls]of items){const line=el('div','tip-row');line.append(el('span','muted',label),el('strong',cls,value));tip.append(line);}tip.style.display='block';tip.style.left=Math.max(4,Math.min(host.clientWidth-180,xx/W*host.clientWidth+10))+'px';hit.setAttribute('aria-valuenow',current);hit.setAttribute('aria-valuetext',dayLabel(r.date,true)+': '+items.map(a=>a[0]+' '+a[1]).join(', '));}
+  const guide=svgEl('line',{x1:0,x2:0,y1:m.top,y2:H-m.bottom,class:'focusline',visibility:'hidden'});svg.append(guide);if(point)svg.append(point);const tip=el('div','chart-tip');host.append(tip);const hit=svgEl('rect',{x:m.left,y:m.top,width:pw,height:ph,fill:'transparent',class:'chart-hit',tabindex:0,role:'slider','aria-label':intervalLabel[intervalFor(type)]+(type==='line'?' commit inspection':' LOC inspection'),'aria-valuemin':0,'aria-valuemax':rows.length-1,'aria-valuenow':0});svg.append(hit);let current=savedDate?rows.findIndex(r=>r.date>=savedDate):0;if(current<0)current=rows.length-1;hit.dataset.date=rows[current].date;
+  function inspect(index){current=Math.max(0,Math.min(rows.length-1,index));const r=rows[current],xx=x(current);hit.dataset.date=r.date;guide.setAttribute('x1',xx);guide.setAttribute('x2',xx);guide.setAttribute('visibility','visible');if(point){point.setAttribute('cx',xx);point.setAttribute('cy',y(r.commits));point.setAttribute('visibility','visible');}tip.replaceChildren(el('div','tip-date',periodLabel(r,true)));const items=type==='line'?[['Commits',num(r.commits),'positive']]:[['Additions','+'+num(r.added),'positive'],['Deletions','−'+num(r.deleted),'negative'],['Commits',num(r.commits),'']];for(const [label,value,cls]of items){const line=el('div','tip-row');line.append(el('span','muted',label),el('strong',cls,value));tip.append(line);}tip.style.display='block';tip.style.left=Math.max(4,Math.min(host.clientWidth-180,xx/W*host.clientWidth+10))+'px';hit.setAttribute('aria-valuenow',current);hit.setAttribute('aria-valuetext',periodLabel(r,true)+': '+items.map(a=>a[0]+' '+a[1]).join(', '));}
   function hide(){if(document.activeElement===hit)return;guide.setAttribute('visibility','hidden');if(point)point.setAttribute('visibility','hidden');tip.style.display='none';}
-  hit.addEventListener('pointermove',e=>{const box=svg.getBoundingClientRect(),xx=(e.clientX-box.left)/box.width*W;inspect(type==='bar'?Math.floor((xx-m.left)/pw*rows.length):Math.round((xx-m.left)/pw*(rows.length-1)));});hit.addEventListener('pointerleave',hide);hit.addEventListener('focus',()=>inspect(current));hit.addEventListener('blur',hide);hit.addEventListener('keydown',e=>{const target=e.key==='ArrowRight'?current+1:e.key==='ArrowLeft'?current-1:e.key==='Home'?0:e.key==='End'?rows.length-1:null;if(target!==null){e.preventDefault();inspect(target);}});
+  function inspectPointer(e){
+    const matrix=svg.getScreenCTM();if(!matrix)return;
+    const xx=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()).x;
+    inspect(type==='bar'?Math.floor((xx-m.left)/pw*rows.length):Math.round((xx-m.left)/pw*(rows.length-1)));
+  }
+  const shade=svgEl('rect',{class:'chart-selection',x:m.left,y:m.top,width:0,height:ph,visibility:'hidden'});
+  svg.insertBefore(shade,hit);
+  let drag=null,anchor=null,suppressClick=false;
+  function showRange(start,end){
+    const half=type==='bar'?pw/rows.length/2:pw/Math.max(1,rows.length-1)/2;
+    const left=Math.max(m.left,x(Math.min(start,end))-half),right=Math.min(W-m.right,x(Math.max(start,end))+half);
+    shade.setAttribute('x',left);shade.setAttribute('width',right-left);shade.setAttribute('visibility','visible');
+    hit.setAttribute('aria-valuetext','Selected '+periodLabel(rows[Math.min(start,end)],true)+' through '+periodLabel(rows[Math.max(start,end)],true)+'. Press Enter to zoom.');
+  }
+  function cancelRange(){drag=null;anchor=null;shade.setAttribute('visibility','hidden');}
+  hit.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    inspectPointer(e);drag={index:current,x:e.clientX,y:e.clientY,moved:false};
+    hit.setPointerCapture(e.pointerId);
+  });
+  hit.addEventListener('pointermove',e=>{
+    inspectPointer(e);
+    if(!drag)return;
+    if(Math.abs(e.clientX-drag.x)>=8){drag.moved=true;showRange(drag.index,current);}
+  });
+  hit.addEventListener('pointerup',e=>{
+    if(!drag)return;
+    inspectPointer(e);
+    const start=drag.index,zoom=drag.moved;drag=null;
+    if(hit.hasPointerCapture(e.pointerId))hit.releasePointerCapture(e.pointerId);
+    if(zoom){suppressClick=true;selectChartRange(rows[start],rows[current],true);}
+    else shade.setAttribute('visibility','hidden');
+  });
+  hit.addEventListener('pointercancel',cancelRange);
+  hit.addEventListener('lostpointercapture',()=>{if(drag)cancelRange();});
+  hit.addEventListener('click',e=>{
+    if(suppressClick){suppressClick=false;return;}
+    inspectPointer(e);openPoint(rows[current]);
+  });
+  hit.addEventListener('pointerleave',()=>{if(!drag)hide();});
+  hit.addEventListener('focus',()=>inspect(current));
+  hit.addEventListener('blur',()=>{cancelRange();hide();});
+  hit.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){cancelRange();inspect(current);return;}
+    if(e.key==='Enter'||e.key===' '){
+      e.preventDefault();
+      if(anchor!==null){const start=anchor;anchor=null;selectChartRange(rows[start],rows[current],true);}
+      else openPoint(rows[current]);
+      return;
+    }
+    const target=e.key==='ArrowRight'?current+1:e.key==='ArrowLeft'?current-1:e.key==='Home'?0:e.key==='End'?rows.length-1:null;
+    if(target!==null){
+      e.preventDefault();
+      if(e.shiftKey&&anchor===null)anchor=current;
+      if(!e.shiftKey){anchor=null;shade.setAttribute('visibility','hidden');}
+      inspect(target);
+      if(anchor!==null)showRange(anchor,current);
+    }
+  });
   if(savedDate){inspect(current);hide();}if(focused)hit.focus({preventScroll:true});
 }
 function table(headers,rows){const t=el('table','table'),head=el('thead'),tr=el('tr');for(const h of headers){const th=el('th','',h);th.scope='col';tr.append(th);}head.append(tr);const body=el('tbody');for(const cells of rows){const row=el('tr');for(const value of cells){const td=el('td');td.append(value instanceof Node?value:document.createTextNode(string(value)));row.append(td);}body.append(row);}t.append(head,body);return t;}
 function lineCounts(added,deleted){if(!finite(added)||!finite(deleted))return el('span','muted','Unavailable');const n=el('span','line-counts');n.append(el('span','positive','+'+num(added)),el('span','negative','−'+num(deleted)));return n;}
 function mainSecondary(main,secondary,cls=''){const n=el('div');n.append(el('div',cls,main));if(secondary)n.append(el('div','secondary',secondary));return n;}
-function dataTable(hostId,rows){const host=$(hostId);host.replaceChildren();if(!rows.length){host.append(el('p','muted','No measured history for this selection.'));return;}host.append(table(['Period','Commits','Added','Deleted'],rows.map(r=>[dayLabel(r.date,true),num(r.commits),el('span','positive','+'+num(r.added)),el('span','negative','−'+num(r.deleted))])));}
+function dataTable(hostId,rows){const host=$(hostId);host.replaceChildren();if(!rows.length){host.append(el('p','muted','No measured history for this selection.'));return;}host.append(table(['Period','Commits','Added','Deleted'],rows.map(r=>{const action=el('button','tiny-button',periodLabel(r,true));action.onclick=()=>openPoint(r);return [action,num(r.commits),el('span','positive','+'+num(r.added)),el('span','negative','−'+num(r.deleted))];})));}
 function renderRepositories(repos,floor){const host=$('repository-table'),active=host.contains(document.activeElement)?document.activeElement:null,focusAttribute=active?.dataset.removePath?'removePath':'repository',focusKey=active?.dataset[focusAttribute];host.replaceChildren();$('repo-count').textContent=repos.length+' selected';if(!repos.length){empty(host,'No repositories selected','Choose a product or repository, or configure a repository path.');if(focusKey)$('repo-select').focus({preventScroll:true});return;}
   const rows=repos.map(r=>{const title=el('div'),button=el('button','tiny-button repo-title',r.name||r.path);button.type='button';button.dataset.repository=string(r.path||r.id);button.addEventListener('click',()=>{$('repo-select').value=string(r.path||r.id);render();});title.append(button,el('div','secondary mono',r.path));if(data.live&&data.repository_management&&location.protocol!=='file:'&&r.removable===true){const remove=el('button','tiny-button','Remove');remove.type='button';remove.dataset.removePath=string(r.path||r.id);remove.setAttribute('aria-label','Remove '+(r.name||r.path));remove.disabled=removingRepositories.has(remove.dataset.removePath);if(remove.disabled)remove.textContent='Removing…';remove.addEventListener('click',()=>removeRepository(r,remove));const actions=el('div','secondary');actions.append(remove);title.append(actions);}if(r.source_kind==='public')title.append(badge('Public GitHub','blue'));if(r.source_kind==='github'){title.append(badge('GitHub','blue'),badge(r.private?'Private':'Public',r.private?'warn':''));}const h=historyReady(r),daily=daysFor(r,floor),local=asArray(r.worktrees),unknown=local.filter(w=>typeof w.dirty!=='boolean').length,dirty=local.filter(w=>w.dirty===true).length,branches=sourceReadable(r,'branches')?asArray(r.branches).filter(b=>finite(b.ahead)):[],workComplete=sourceState(r,'worktrees')==='ok'&&!unknown,status=el('div');status.append(badge(r.status==='ok'?'Observed':r.status==='partial'?'Partial':r.status==='pending'?'Pending':r.status==='auth_required'?'Sign in required':'Unavailable',r.status==='ok'?'good':r.status==='partial'?'warn':r.status==='pending'?'blue':'bad'),el('div','secondary',stamp(r.collected_at)));return[title,mainSecondary(r.ref||'HEAD',r.head?string(r.head).slice(0,9):'No resolved commit','mono'),h?(historyPartial(r)?'≥':'')+num(sum(daily,'commits')):'—',h?lineCounts(sum(daily,'added'),sum(daily,'deleted')):el('span','muted','Unavailable'),['public','github'].includes(r.source_kind)?'Not observed (remote)':!sourceReadable(r,'worktrees')||(!workComplete&&!local.length)?'Unknown':mainSecondary(dirty+' dirty / '+local.length+(workComplete?' total':' captured'),unknown?unknown+' unknown':workComplete?'':'Partial observation'),branches.length?branches.filter(b=>b.ahead>0).length+' branches':'—',status];});host.append(table(['Repository','Selected ref','Commits','Added / deleted','Worktrees','Ahead of upstream','Observation'],rows));if(focusKey)([...host.querySelectorAll('button')].find(node=>node.dataset[focusAttribute]===focusKey)||$('repo-select')).focus({preventScroll:true});}
 function worktreeState(w){const box=el('div','state-list');if(w.status==='error'||typeof w.dirty!=='boolean')box.append(badge('Unknown','bad'));if(w.status==='partial')box.append(badge('Partial','warn'));for(const [key,label,cls]of [['staged','staged','good'],['unstaged','unstaged','warn'],['untracked','untracked','blue'],['conflicts','conflicts','bad']])if(finite(w[key])&&w[key]>0)box.append(badge(num(w[key])+' '+label,cls));if(w.dirty===false)box.append(badge(w.status==='partial'?'Captured files clean':'Clean',w.status==='partial'?'':'good'));if(w.dirty===true&&!box.childNodes.length)box.append(badge('Changes present','warn'));return box;}
@@ -168,7 +664,17 @@ function renderWork(repos){const host=$('work-table'),all=$('show-all').checked,
 }
 function renderCoverage(repos){const items=[];for(const error of asArray(data.errors))items.push(string(typeof error==='object'?error.message||JSON.stringify(error):error));for(const r of repos){for(const source of ['history','worktrees','branches','stashes']){const state=sourceState(r,source);if(state!=='ok')items.push((r.name||r.path)+': '+source+' observation '+(state==='pending'?'is pending':state==='not_requested'?'was not requested':state==='error'?'is unavailable':'is partial')+'.');}for(const e of [...asArray(r.errors),...asArray(r.warnings)])items.push((r.name||r.path)+': '+string(e));if(r.history?.truncated)items.push(r.name+': history reached the collection limit. Chart totals are partial.');if(r.history?.shallow)items.push(r.name+': shallow Git history. Earlier commits may be unavailable.');for(const w of asArray(r.worktrees)){for(const e of asArray(w.errors))items.push((r.name||r.path)+' / '+(w.branch||w.path)+': '+string(e));if(finite(w.observation_gap_seconds)&&w.observation_gap_seconds>Math.max(120,Number(data.refresh_seconds||30)*4))items.push((r.name||r.path)+' / '+(w.branch||w.path)+': '+num(Math.round(w.observation_gap_seconds/60))+' minute gap between observations; elapsed age is not verified inactivity.');}}const unique=[...new Set(items)],host=$('coverage-content');host.replaceChildren();$('coverage-summary').textContent=!repos.length?'Observation coverage · no repositories selected':unique.length?'Observation coverage · '+unique.length+' notes':'Observation coverage · no reported collection errors';if(unique.length){const list=el('ul');for(const item of unique)list.append(el('li','',item));host.append(list);}else host.append(el('p','muted',repos.length?'All configured observations in this selection returned without reported errors. Cached remote refs are still only as current as your local Git data.':'Choose a configured repository to inspect its observation coverage.'));}
 function renderConnection(){const chip=$('connection'),label=$('connection-label'),dot=chip.querySelector('.dot'),age=(Date.now()-Date.parse(data.generated_at))/1000,stale=data.live&&Number.isFinite(age)&&age>Math.max(120,Number(data.refresh_seconds||30)*4);chip.className='chip '+(connectionError?'bad':data.collection_running?'blue':stale?'warn':data.live?'good':'');label.textContent=connectionError?'Collector unavailable':data.collection_running?'Scanning…':stale?'Last snapshot is stale':data.live?'Live · '+(data.refresh_seconds||30)+'s refresh':data.demo?'Demo snapshot':'Saved snapshot';dot.className='dot'+(data.live&&!connectionError&&!stale?' live':'');$('updated').textContent='Observed '+stamp(data.generated_at);$('connection-banner').hidden=!connectionError;$('connection-banner').textContent=connectionError?connectionError+' Showing the last available observation from '+stamp(data.generated_at)+'.':'';$('add-button').hidden=!(data.live&&data.repository_management&&location.protocol!=='file:');$('github-button').hidden=$('add-button').hidden;$('refresh-button').disabled=fetching||!data.live;$('refresh-button').title=data.live?'Read the latest local collector snapshot':'A saved report is static. Run the Python dashboard for automatic refresh.';}
-function render(){const repos=selected(),floor=dateFloor(repos),days=aggregate(repos,floor),weeks=weeksFrom(days),ready=repos.filter(historyReady).length,partial=repos.some(historyPartial);$('page-title').textContent=data.title||'Git activity dashboard';$('demo-banner').hidden=!data.demo;$('selection-note').textContent=repos.length+' repositor'+(repos.length===1?'y':'ies')+' selected · '+(days.length?dayLabel(days[0].date)+' – '+dayLabel(days.at(-1).date,true):'History unavailable');$('timezone-note').textContent='Commit dates: '+(data.timezone||'UTC')+' · Current work: latest snapshot';renderMetrics(repos,days);chart('commits-chart',days,'line');chart('frequency-chart',weeks,'bar');$('commits-caption').textContent=ready+'/'+repos.length+' histories available'+(partial?' · partial totals':' · non-merge commits');$('frequency-caption').textContent=partial?'Captured text-line changes · partial totals':'Committed text-line changes · binary LOC excluded';dataTable('daily-data',days);dataTable('weekly-data',weeks);renderRepositories(repos,floor);renderWork(repos);renderCoverage(repos);renderConnection();$('footer-observation').textContent='Snapshot '+stamp(data.generated_at)+' · '+(data.timezone||'UTC');}
+function render(){
+  const scope=selectionScopeKey();
+  if(scope!==selectionScope){resetSelection(true);selectionScope=scope;}
+  const repos=selected(),floor=dateFloor(repos),days=aggregate(repos,floor),ready=repos.filter(historyReady).length,partial=repos.some(historyPartial);$('page-title').textContent=data.title||'Git activity dashboard';$('demo-banner').hidden=!data.demo;$('selection-note').textContent=repos.length+' repositor'+(repos.length===1?'y':'ies')+' selected · '+(days.length?dayLabel(days[0].date)+' – '+dayLabel(days.at(-1).date,true):'History unavailable');$('timezone-note').textContent='Commit dates: '+(data.timezone||'UTC')+' · Current work: latest snapshot';renderMetrics(repos,days);configureChartDate(days);renderSelection();
+  if(pointRepos.some(old=>!repos.some(r=>r.id===old.id&&r.head===old.head&&r.history&&r.github_generation===old.github_generation)))closePoint();
+  for(const [type,id,tableId] of [['line','commits-chart','daily-data'],['bar','frequency-chart','weekly-data']]){
+    const interval=intervalFor(type), rows=chartRows(repos,days,interval), panel=$(id).closest('article');
+    panel.querySelector('.panel-sub').textContent=intervalLabel[interval]+(type==='line'?' commit count':' lines added and deleted');
+    panel.querySelector('summary').textContent='View '+intervalLabel[interval].toLowerCase()+' data';
+    chart(id,rows,type);dataTable(tableId,rows);
+  }$('commits-caption').textContent=ready+'/'+repos.length+' histories available'+(partial?' · partial totals':' · non-merge commits');$('frequency-caption').textContent=partial?'Captured text-line changes · partial totals':'Committed text-line changes · binary LOC excluded';renderRepositories(repos,floor);renderWork(repos);renderCoverage(repos);renderConnection();$('footer-observation').textContent='Snapshot '+stamp(data.generated_at)+' · '+(data.timezone||'UTC');}
 async function refresh(){
   if(fetching||!data.live)return;fetching=true;renderConnection();
   let revision=repositoryRevision,reconcileSession=null;
@@ -215,7 +721,9 @@ async function removeRepository(repo,button){
   }catch(error){$('repository-message').textContent='Could not remove '+name+': '+error.message;}
   finally{removingRepositories.delete(path);for(const node of document.querySelectorAll('[data-remove-path]'))if(node.dataset.removePath===path){node.disabled=false;node.textContent='Remove';}}
 }
-$('product-select').addEventListener('change',()=>{filters();render();});$('repo-select').addEventListener('change',render);$('range-select').addEventListener('change',render);$('show-all').addEventListener('change',()=>renderWork(selected()));$('refresh-button').addEventListener('click',refresh);
+$('product-select').addEventListener('change',()=>{filters();render();});$('repo-select').addEventListener('change',render);$('range-select').addEventListener('change',render);
+$('interval-select').addEventListener('change',()=>{cancelGrouping();selectedRange=zoomRange;render();});
+$('chart-day').addEventListener('change',()=>{resetSelection();render();});$('show-all').addEventListener('change',()=>renderWork(selected()));$('refresh-button').addEventListener('click',refresh);
 const tabs=[...document.querySelectorAll('[data-tab]')];for(const tab of tabs){tab.addEventListener('click',()=>{activeTab=tab.dataset.tab;for(const t of tabs){t.setAttribute('aria-selected',String(t===tab));t.tabIndex=t===tab?0:-1;}$('show-all').disabled=activeTab==='recent'||activeTab==='stashes';renderWork(selected());});tab.addEventListener('keydown',e=>{const i=tabs.indexOf(tab),next=e.key==='ArrowRight'?(i+1)%tabs.length:e.key==='ArrowLeft'?(i+tabs.length-1)%tabs.length:null;if(next!==null){e.preventDefault();tabs[next].click();tabs[next].focus();}});}
 $('export-button').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='git-dashboard-snapshot.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 
@@ -314,6 +822,7 @@ function updateGithubCount(visibleCount){
 function rememberGithubVersion(status){
   if(typeof status.github_session_id!=='string'||!Number.isSafeInteger(status.generation))return;
   const changed=githubEpoch!==status.github_session_id||githubGeneration!==status.generation;
+  if(changed){closePoint();resetSelection(true);}
   githubEpoch=status.github_session_id;githubGeneration=status.generation;
   if(!changed)return;
   repositoryRevision++;
