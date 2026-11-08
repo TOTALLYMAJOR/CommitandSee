@@ -1,6 +1,6 @@
 # Set up the CommitandSee GitHub App
 
-The **v0.3.0-rc.1 portable build** and current source include CommitandSee's public
+Portable builds starting with **v0.3.0-rc.1** and current source include CommitandSee's public
 GitHub App registration.
 Ordinary users can go directly to [installation and sign-in](#install-authorize-then-select-repositories);
 they do not enter app IDs or register their own app. The publisher instructions
@@ -10,7 +10,8 @@ The implementation uses device authorization and read-only repository
 permissions. The published **v0.2.0-rc.1 Windows ZIP does not include GitHub
 sign-in**; adding settings to that older build will not enable it.
 
-For the source build's chart-to-PR lookup on private repositories, the publisher
+For chart-to-PR lookup on private repositories (source and portable builds
+starting with v0.4.0-rc.1), the publisher
 can also enable **Pull requests: read-only**, and the installation owner must
 accept the new permission. Existing installations can keep using history and
 the browser-based PR search with their current permissions.

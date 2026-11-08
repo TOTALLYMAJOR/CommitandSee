@@ -1,5 +1,36 @@
 # Release notes
 
+## v0.4.0-rc.1 - chart insights and PR drill-down
+
+- Click a chart point to inspect its commits and follow GitHub PR associations.
+  A single shared association can open its PR directly; larger or ambiguous
+  selections keep their individual commit details available.
+- Choose weekly, daily, hourly, or 15-minute buckets in the dashboard timezone.
+  Drag across a chart or use Shift+arrow keys and Enter to zoom; reset returns
+  to the previous interval.
+- See the selected period's totals and largest contributors. Group captured
+  changes by PR with each group's share, keeping unresolved and unavailable
+  associations visible instead of treating them as direct pushes.
+- Compare against the immediately preceding equal-duration period when both
+  periods have complete captured coverage. Partial history and zero baselines
+  have explicit explanations.
+- Include these features in the Windows portable app. Correct two test fixtures
+  for native Windows: use the platform null device and close SQLite connections
+  before deleting test databases.
+
+Private PR lookup requires an imported repository, the GitHub App's read-only
+Pull requests permission, and installation-owner acceptance. The release check
+on 2026-11-08 found only Contents and Metadata read permissions enabled on the
+publisher app. Real private PR lookup remains unverified until that permission
+and a signed-in end-to-end check are completed. Browser-based GitHub search
+links remain available.
+
+The unsigned Windows x64 ZIP includes Python and timezone data; Git for Windows
+is still required. Stop the previous app and extract the entire new ZIP into a
+separate folder. Existing saved selections remain; sign in again after restart.
+See [the prerelease](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.4.0-rc.1)
+for downloads and [VERIFICATION.md](VERIFICATION.md) for the test scope and limits.
+
 ## v0.3.0-rc.1 — GitHub sign-in and selected repository imports
 
 - Connect the bundled CommitandSee GitHub App using a short browser authorization

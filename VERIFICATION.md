@@ -426,3 +426,68 @@ were changed for the rerun.
 
 Windows Git fetched the remote after WSL DNS failed. The remote main tip still
 matched the feature branch's base. The final checksum and diff checks passed.
+
+## Windows chart-insights release verification - 2026-11-08
+
+The v0.4.0-rc.1 candidate packages the chart features merged in PR #6. Release
+changes update the package version and documentation and repair two native test
+fixtures; application runtime code is unchanged from the merged feature tree.
+
+Final artifact: `CommitandSee-0.4.0-rc.1-Windows-x64-7e04f096605e.zip`,
+**11,232,100 bytes**, SHA-256
+`b19a252445b36b3dc4eac56d79bc1714f71ca28f6c5c9937da2d139bdc9b1f89`.
+The 21-input digest is
+`7e04f096605e8045add66205c1b6fdb8342ca00e808bedba43b79c8045a9277e`.
+All 21 source input hashes matched the final checkout. All 685 ZIP entries
+passed CRC validation; no configuration, observation-state, SQLite, or Git
+metadata files were included.
+
+The build used isolated native Windows x64 Python 3.14.3 from the CPython NuGet
+distribution, PyInstaller 6.22.3, and tzdata 2026.6. An initial attempt using the
+host's split Python 3.13 installation stopped at the required-license check and
+produced no ZIP. The final build used a complete distribution inside build
+scratch space, with no global Python installation or execution-policy changes.
+
+Validation performed:
+
+- `python -B -m unittest discover -v` under the isolated native build environment:
+  148 tests run in 175.074 seconds, zero failures/errors, 13 skip reports for
+  POSIX fixtures, Windows-invalid filenames, or unavailable symlink privileges.
+  Native subprocess containment and binary input/output checks passed. The first
+  host-Python attempt exposed a Linux-only null-device expectation and unclosed
+  SQLite fixture connections; those fixtures were corrected. The host Python
+  warning also polluted a subprocess stderr assertion; the complete build
+  environment resolved that issue. No runtime behavior was changed.
+- WSL regression recheck of `test_public_repositories test_registry_regressions`:
+  30 tests passed after the fixture corrections.
+- `node --test --test-concurrency=1 test_dashboard_browser.cjs test_github_browser.cjs`
+  using native full Chromium: 37 cases, 35 passes, two optional axe-core skips,
+  zero failures. These use controlled provider responses.
+- `packaging/smoke_portable.py --github-checks --github-device-probe` against the
+  extracted final ZIP: empty onboarding, HTTP HTML/JSON, bundled timezone data,
+  repository add/remove and restart persistence, and graceful Ctrl+Break exit
+  passed with Python absent from the child PATH. Fixture checkout and extracted
+  bundle bytes were unchanged. Bundled GitHub settings and setup guide worked;
+  actual device-code issuance, cancellation, shutdown while pending, and an
+  explicitly disabled publisher override passed. Issued codes were not written
+  to the checked settings or logs.
+- `packaging/smoke_shutdown.py` against the extracted executable: the launcher,
+  a stalled Git command, and its child stopped in 2.393 seconds after Ctrl+Break,
+  before the 30-second command timeout.
+- Additional browser checks against the actual frozen server reconciled three
+  disposable fixture commits, opened a chart point's commit details, exercised
+  keyboard range zoom/reset and hour/15-minute controls, and found zero page or
+  console errors. Desktop 1440-pixel and mobile 390-pixel captures were inspected;
+  the mobile document had no horizontal overflow. This did not inspect the
+  user's default browser window or complete a private GitHub login.
+
+The publisher's public GitHub App metadata still reported only `contents: read`
+and `metadata: read` during this release check. Private commit-to-PR lookup is
+implemented and fixture-tested but remains unverified against a real private
+installation. It needs `pull_requests: read`, installation-owner acceptance,
+and a fresh signed-in end-to-end test. Device-code issuance alone does not
+establish user authorization or private access.
+
+This remains an unsigned prerelease requiring Git for Windows. Clean-machine
+compatibility, SmartScreen reputation, signed installation, full accessibility,
+and real private PR access are not qualified by these checks.
