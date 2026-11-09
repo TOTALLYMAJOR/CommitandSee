@@ -54,7 +54,8 @@ def _environment() -> dict[str, str]:
                 "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT"):
         env.pop(key, None)
     for key in list(env):
-        if key.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")):
+        # Tracing can write arbitrary files even for read-only Git commands.
+        if key.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_", "GIT_TRACE")) or key == "GIT_CURL_VERBOSE":
             env.pop(key)
     env.update(GIT_TERMINAL_PROMPT="0", GIT_OPTIONAL_LOCKS="0",
                GIT_NO_LAZY_FETCH="1", GIT_PAGER="cat", LC_ALL="C", LANG="C")

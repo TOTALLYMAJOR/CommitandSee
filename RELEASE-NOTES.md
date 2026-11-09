@@ -1,5 +1,25 @@
 # Release notes
 
+## Unreleased - local change insights (0.5.0-rc.1 candidate)
+
+- Inspect a local branch, stash, working files, or staged files against a chosen
+  local or cached remote branch. Compare captured changes with target contents
+  and show present, remaining, partly present, or uncertain evidence per file.
+- Find identical saved file versions in bounded branch-tip, stash, and recent
+  reflog snapshots. Include a stash's separate staged snapshot. Missing matches
+  are qualified by the locations searched; they do not establish uniqueness,
+  backup safety, or permission to delete work.
+- Run scans explicitly from the live dashboard. Reject stale selections and
+  changed repository evidence, keep scans bounded and read-only, and exclude
+  detailed results from saved observations and JSON exports.
+- Strip inherited Git trace destinations in the shared command runner so even
+  read-only Git commands cannot write caller-selected trace files.
+- Add the comparison engine to the portable build inputs. This source update
+  and local candidate do not replace the published 0.4.0-rc.1 download.
+
+See [the local insights guide](docs/LOCAL-INSIGHTS.md) for evidence limits and
+[VERIFICATION.md](VERIFICATION.md) for checks performed.
+
 ## v0.4.0-rc.1 - chart insights and PR drill-down
 
 - Click a chart point to inspect its commits and follow GitHub PR associations.

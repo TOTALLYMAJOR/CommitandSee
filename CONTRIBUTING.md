@@ -54,7 +54,7 @@ working repository to reproduce a mutating Git operation.
 ## Validate and submit
 
 Run the Python suite above. For browser changes, run
-`node --test --test-concurrency=1 test_dashboard_browser.cjs test_github_browser.cjs`
+`node --test --test-concurrency=1 test_dashboard_browser.cjs test_github_browser.cjs test_local_insights_browser.cjs`
 using an existing Playwright installation; the README describes optional
 environment settings. Tests use synthetic or disposable data. Record which
 engines actually ran and any skipped checks. Provider fixtures do not prove a
