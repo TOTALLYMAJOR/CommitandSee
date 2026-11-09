@@ -10,9 +10,9 @@ You changed a file in one project, left a branch in another, and saved something
 in a stash. **CommitandSee brings those loose ends into one local dashboard**,
 alongside the commit history of the repositories you choose.
 
-**[Download for Windows x64 — portable ZIP](https://github.com/TOTALLYMAJOR/CommitandSee/releases/download/v0.3.0-rc.1/CommitandSee-0.3.0-rc.1-Windows-x64-cd56dec4f860.zip)**
+**[Download for Windows x64 — portable ZIP](https://github.com/TOTALLYMAJOR/CommitandSee/releases/download/v0.4.0-rc.1/CommitandSee-0.4.0-rc.1-Windows-x64-7e04f096605e.zip)**
 
-**v0.3.0-rc.1 prerelease · Python included · Git required · MIT license**
+**v0.4.0-rc.1 prerelease · Python included · Git required · MIT license**
 
 Observe local checkouts without a GitHub account. No staging, committing,
 pushing, or merging is performed by the dashboard.
@@ -63,7 +63,7 @@ This is an **unsigned Windows x64 prerelease**, tested on Windows 11. The native
 process-control path requires Windows 10 / Server 2016 or newer; clean-machine
 compatibility and SmartScreen reputation have not been qualified. There is no
 signed installer, background service, or automatic updater. See the
-[release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.3.0-rc.1)
+[release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.4.0-rc.1)
 for the ZIP, checksum, build information, and verification limits.
 
 ## Questions you can answer at a glance
@@ -92,10 +92,10 @@ CommitandSee adds visibility into work that has not reached GitHub. It does not
 stage, commit, push, merge, reset, or delete your repository work.
 
 Want to explore before setting up repositories? Download the source from the
-[release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.3.0-rc.1)
+[release page](https://github.com/TOTALLYMAJOR/CommitandSee/releases/tag/v0.4.0-rc.1)
 and open [`demo.html`](demo.html) locally. Its data is clearly labeled synthetic.
 
-### Inspect a selection and compare periods (source build)
+### Inspect a selection and compare periods
 
 The **About this selection** panel explains the displayed history using captured
 commit details. It shows totals, the three largest contributors, and each
@@ -169,7 +169,7 @@ inspect next. Use your editor or Git client to make the changes.
 
 ## What is available and what has been checked
 
-This README describes **v0.3.0-rc.1**: local checkout visibility, anonymous public
+This README describes **v0.4.0-rc.1**: local checkout visibility, anonymous public
 GitHub history, and an optional [GitHub picker](#connect-github) for authorized
 repositories. The Windows ZIP bundles Python and has passed native startup and
 offline smoke checks. It is unsigned and remains a prerelease.
@@ -221,7 +221,7 @@ or failed observations remain unknown; they do not mean zero activity.
 CommitandSee includes the public registration for the
 [CommitandSee GitHub App](https://github.com/apps/commitandsee). Users do not enter
 app IDs, paste tokens, or register a separate app to sign in. If you are upgrading
-from v0.2.0-rc.1, this is a new feature in v0.3.0-rc.1. Publishers maintaining a fork
+from v0.2.0-rc.1, sign-in was introduced in v0.3.0-rc.1. Publishers maintaining a fork
 can use the [GitHub App setup guide](docs/GITHUB-APP-SETUP.md) to supply their own
 registration.
 
@@ -417,7 +417,7 @@ repository files. This is a local dashboard, not a hosted team service.
 | **Add or Remove is unavailable** | Use the portable app or launch the source server with `--config`. Static reports and `--repo`-controlled sources cannot save registry changes. |
 | **The page shows pending, partial, or unknown data** | Allow the first scan to finish and inspect observation coverage. Large repositories, missing worktrees, shallow history, or unavailable refs can limit results. |
 | **A public repository cannot be added** | Check the public GitHub URL, Internet access, and reported rate-limit/availability error. For private repositories, use a local checkout or the GitHub picker. |
-| **GitHub sign-in is not configured** | Use the complete v0.3.0-rc.1 package or current source, which includes the public app registration. Check any publisher overrides. The older v0.2.0-rc.1 ZIP has no sign-in feature. See the [setup guide](docs/GITHUB-APP-SETUP.md). |
+| **GitHub sign-in is not configured** | Use the complete v0.4.0-rc.1 package or current source, which includes the public app registration. Check any publisher overrides. The older v0.2.0-rc.1 ZIP has no sign-in feature. See the [setup guide](docs/GITHUB-APP-SETUP.md). |
 | **Signed in, but a repository is missing** | Check your account access and the app installation's allowed repositories. Obtain organization approval if required, then choose **Refresh list**. |
 | **A device code expired or was declined** | Choose **Retry sign-in** to start a fresh authorization. Never send the code or tokens in a support report. |
 | **Configuration changed outside the dashboard** | Stop and restart with the same configuration. Keep the JSON and its registry together. |
@@ -456,5 +456,5 @@ checks does not establish complete accessibility conformance or production readi
 
 **Start with one repository and see what is still waiting.**
 
-[Download the Windows portable ZIP](https://github.com/TOTALLYMAJOR/CommitandSee/releases/download/v0.3.0-rc.1/CommitandSee-0.3.0-rc.1-Windows-x64-cd56dec4f860.zip)
+[Download the Windows portable ZIP](https://github.com/TOTALLYMAJOR/CommitandSee/releases/download/v0.4.0-rc.1/CommitandSee-0.4.0-rc.1-Windows-x64-7e04f096605e.zip)
 — Python included; Git required. For other platforms, [run from source](#run-from-source).

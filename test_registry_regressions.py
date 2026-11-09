@@ -1,6 +1,7 @@
 """Configuration containment, calendar caching, and repository removal regressions."""
 import argparse
 import copy
+from contextlib import closing
 from datetime import datetime, timezone
 import json
 import os
@@ -235,7 +236,7 @@ getattr(state, action + '_repository')({'path': target})
 
     def test_registry_refuses_unrelated_database_and_rolls_back_sql_failure(self):
         state = self.state()
-        with sqlite3.connect(state.registry.path) as connection:
+        with closing(sqlite3.connect(state.registry.path)) as connection, connection:
             connection.execute('CREATE TABLE unrelated (value TEXT)')
             connection.execute("INSERT INTO unrelated VALUES ('keep')")
         before = state.registry.path.read_bytes()
@@ -246,7 +247,7 @@ getattr(state, action + '_repository')({'path': target})
         state.add_repository({'path': str(self.repo)})
         other = self.root / 'other'
         self.git('init', '-q', other)
-        with sqlite3.connect(state.registry.path) as connection:
+        with closing(sqlite3.connect(state.registry.path)) as connection, connection:
             connection.execute("CREATE TRIGGER refuse_insert BEFORE INSERT ON repository_overrides "
                                "BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END")
         with self.assertRaises(OSError):

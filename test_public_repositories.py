@@ -1,6 +1,7 @@
 """Public URL trust boundary and Git history contract."""
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -64,7 +65,7 @@ class PublicRepositoryTests(unittest.TestCase):
     def test_public_git_ignores_user_config_and_credentials(self):
         with patch.dict('os.environ', {'GIT_CONFIG_GLOBAL': '/bad/config', 'GIT_SSL_NO_VERIFY': '1', 'GIT_CONFIG_COUNT': '2'}):
             git = public.PublicGit(self.root)
-        self.assertEqual(git.environment['GIT_CONFIG_GLOBAL'], '/dev/null')
+        self.assertEqual(git.environment['GIT_CONFIG_GLOBAL'], os.devnull)
         self.assertNotIn('GIT_SSL_NO_VERIFY', git.environment)
         self.assertNotIn('GIT_CONFIG_COUNT', git.environment)
         self.assertIn('http.followRedirects=false', git.prefix)
