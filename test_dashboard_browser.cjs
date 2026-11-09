@@ -556,10 +556,12 @@ test('baselines expose zero activity, partial history and missing event detail',
   assert.match(await page.locator('#selection-comparison').textContent(),/decreased 100%/);
   data.repositories[0].history.truncated=true;
   await page.getByRole('button',{name:'Refresh view'}).click();
+  await until(async()=> (await page.locator('#selection-comparison').textContent()).includes('complete preceding period is unavailable'),'partial coverage refresh');
   assert.match(await page.locator('#selection-comparison').textContent(),/complete preceding period is unavailable/);
   assert.match(await page.locator('#selection-coverage').textContent(),/Partial/);
   delete data.repositories[0].history.events;
   await page.getByRole('button',{name:'Refresh view'}).click();
+  await until(async()=> (await page.locator('#selection-totals').textContent())==='Commit details unavailable','missing event detail refresh');
   assert.equal(await page.locator('#selection-totals').textContent(),'Commit details unavailable');
   assert.equal(await page.locator('#group-prs').isDisabled(),true);
 });

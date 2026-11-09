@@ -168,7 +168,7 @@ class PortableLauncherTests(unittest.TestCase):
 
     def test_auth_sources_and_setup_guide_are_part_of_the_build_capture(self):
         build = runpy.run_path(str(Path(__file__).parent / 'packaging' / 'build_portable.py'))
-        auth_inputs = ('github_auth.py', 'authenticated_repositories.py',
+        auth_inputs = ('github_auth.py', 'authenticated_repositories.py', 'local_insights.py',
                        'github_app_defaults.json', 'docs/GITHUB-APP-SETUP.md')
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

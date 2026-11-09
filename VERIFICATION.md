@@ -491,3 +491,116 @@ establish user authorization or private access.
 This remains an unsigned prerelease requiring Git for Windows. Clean-machine
 compatibility, SmartScreen reputation, signed installation, full accessibility,
 and real private PR access are not qualified by these checks.
+
+## Local change insights - 0.5.0-rc.1 candidate (2026-11-09)
+
+This change adds on-demand content comparison and bounded saved-file-version
+lookup for registered local repositories. The candidate is built and checked
+locally; it is not a published release and does not replace the 0.4.0 download.
+
+Final WSL `python3 -B -m unittest discover -v`: **183 tests run, 4 platform
+skips, zero failures/errors**, in 36.418 seconds. The engine has 25 focused
+regressions, and the HTTP/registration integration has 9. Coverage includes
+squash/cherry-pick content adoption, partial overlap, ambiguity, mode changes,
+working versus staged versions, stash staged/untracked snapshots, reflog
+recovery evidence, truncation, shallow history, sparse files, exclusions,
+unsafe paths, cancellation, concurrency, and stale results.
+
+Final native Windows run of the same full suite: **183 tests run, 16 platform
+skips, zero failures/errors**, in 235.533 seconds, using the isolated Python
+3.14.3 build environment. Skips cover POSIX-only fixtures, Windows-invalid
+filenames, and unavailable symlink privileges; native subprocess containment
+and the inherited-trace regressions passed.
+
+The combined Chromium browser run exercised **49 cases: 47 passes, 2 optional
+axe-core skips, zero failures**, in 67.662 seconds. Twelve new cases cover
+inspection controls, mixed results, missing options, errors, source removal,
+late responses, changed identities, escaped filenames, mobile layout, and
+export exclusion. An existing chart comparison fixture now waits for each
+asynchronous refresh before checking results.
+
+Independent review reproduced and verified fixes for a POSIX ancestor symlink
+race, an omitted stash index snapshot, expired reflog evidence during a scan,
+capability preflight outside the scan budget, and inherited Git trace-file
+writes. A separate 56-test review run passed, with additional adversarial
+fixtures checking both scanner entry points. The shared observer trace
+regression failed on the pre-fix implementation and passed after Git trace
+environment variables were removed. Fixture file hashes and modes remained
+unchanged in the fixed scanner tests. This is evidence from the tested cases,
+not a general hostile-code sandbox proof.
+
+The local Windows x64 artifact is
+`CommitandSee-0.5.0-rc.1-Windows-x64-5f3b9dd1c459.zip`, **11,262,611 bytes**,
+SHA-256 `a220a882aae08c1ab3c8d72046cc736bb95f2dce11310f5d050696c51de85f65`.
+All **22 source-input hashes** match the checkout; all **685 ZIP entries** pass
+CRC validation. No checked configuration, observation-state, SQLite, or Git
+metadata paths were included. Build environment: isolated native Windows
+Python 3.14.3, PyInstaller 6.22.3, tzdata 2026.6. No global installation or
+execution-policy changes were made.
+
+The extracted candidate passed `packaging/smoke_portable.py --github-checks`:
+empty onboarding, HTTP HTML/JSON, bundled timezone data, add/remove persistence
+across restarts, and graceful Ctrl+Break exit, with Python absent from its child
+PATH. Repository and extracted-bundle bytes were unchanged. Bundled GitHub
+settings, setup guide, cleared session state, and disabled-publisher override
+passed; this run did not request device authorization or verify private access.
+
+Browser checks against both source and the actual extracted executable used a
+disposable repository. They verified partial adoption and remaining changes,
+exact saved-version detection, distinct staged and working contents, and
+qualified missing-match results. Repository and Git metadata bytes remained
+unchanged. Desktop 1440px and mobile 390px captures were inspected; no horizontal
+mobile overflow or browser page/console errors were observed.
+
+Limits: inspection is textual evidence, not semantic equivalence, backup
+verification, or a safe-delete recommendation. Saved-copy checks cover bounded
+local states only, and cached refs may be stale. CPU deadlines are cooperative:
+the reviewer measured about one second for a worst-case bounded text comparison,
+so the nominal 18-second budget is not a strict real-time guarantee. Privileged
+Windows symlink/reparse races were not independently exercised; those platform
+fixtures remain skipped. Clean-machine compatibility, signing, SmartScreen,
+full accessibility, and real private GitHub PR lookup remain unqualified.
+
+## Selection refresh and bulk repository picker - 0.5.0-rc.2 (2026-11-09)
+
+Independent Chromium reproduction confirmed that source/target changes cleared
+results without requesting a replacement, and a busy previous scan left the
+repository picker stuck after HTTP 429. Main overview filtering itself rendered
+immediately. GitHub connection also cleared old observations without requesting
+an immediate snapshot. These paths now update automatically, coalesce concurrent
+refresh requests, retain compatible comparison choices, and retry a busy scanner
+within a bounded interval. Normal snapshot polling still does not run inspections.
+
+The GitHub picker adds Select all shown and Clear selection. Bulk selection
+respects search, ignores duplicate discovery rows and already-added repositories
+for the current account, and sends sequential batches of at most 50 IDs. It
+accepts only response IDs from the current batch, retains failed or unconfirmed
+choices for retry, and stops further batches on dialog closure or account change.
+
+Final combined Chromium run: **60 cases, 58 passes, 2 optional axe-core skips,
+zero failures**, in 84.948 seconds. Regression cases cover immediate initial
+connection refresh, refresh requests arriving during a snapshot fetch, automatic
+source/target/repository updates, debounce, busy retry/cancellation, account and
+late-response boundaries, filtered selection, 125-repository batches, partial
+failure, interrupted imports, and 500-row mobile controls. Independent review
+passed 35 browser cases plus two final overview-switching checks. The focused
+Python dashboard, repository UI, and portable-launcher suites passed **30 tests**
+in 2.597 seconds. The comparison engine and backend are unchanged from rc.1's
+full Windows/WSL qualification above.
+
+Desktop 1440px and mobile 390px GitHub picker captures were inspected. The actual
+extracted rc.2 executable also passed automatic target/source changes against a
+disposable Git repository without page reload or Inspect button clicks. Partial
+adoption, remaining changes, staged/working separation, and saved-version labels
+were checked. No browser page/console errors or horizontal mobile overflow were
+observed, and repository plus Git metadata bytes remained unchanged.
+
+Artifact: `CommitandSee-0.5.0-rc.2-Windows-x64-892404344e29.zip`, **11,264,695 bytes**,
+SHA-256 `c6a685c3a77ba70602f864d12ecb20bfb6d9ec441f519c3212962c5c4069cb49`.
+All 22 source inputs matched the checkout and all 685 ZIP entries passed CRC
+checks; the private-state path check found no configuration, observation, Git,
+or SQLite entries. The native portable smoke test with `--github-checks` passed
+onboarding, persistence, bundled settings/guide, and shutdown checks with Python
+absent from the child PATH. GitHub behavior uses controlled provider fixtures;
+this follow-up did not authorize a real GitHub account or import user repositories.
+The build remains an unsigned local candidate, not a published release.

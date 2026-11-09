@@ -10,6 +10,7 @@ No network, credentials, or pre-existing user repositories are used.
 from __future__ import annotations
 
 from datetime import timedelta
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -30,6 +31,22 @@ class GitSafetyAndMetricsRegressions(unittest.TestCase):
         self.fixture = fixtures.GitMetricsIntegrationTests()
         self.addCleanup(self.fixture.doCleanups)
         self.fixture.setUp()
+
+    def test_inherited_git_trace_destinations_cannot_write_into_observed_repository(self) -> None:
+        f = self.fixture
+        f.write("app.txt", "baseline\n")
+        f.commit("baseline")
+        def hashes():
+            return {str(path.relative_to(f.repo)): hashlib.sha256(path.read_bytes()).hexdigest()
+                    for path in f.repo.rglob("*") if path.is_file()}
+        before = hashes()
+        tracing = {key: str(f.repo / (key.lower() + ".log")) for key in
+                   ("GIT_TRACE", "GIT_TRACE_SETUP", "GIT_TRACE_PERFORMANCE",
+                    "GIT_TRACE2", "GIT_TRACE2_EVENT", "GIT_TRACE2_PERF")}
+        with mock.patch.dict(os.environ, tracing):
+            result = f.metrics()
+        self.assertEqual(result["history"]["commits"], 1)
+        self.assertEqual(hashes(), before, "Inherited Git tracing wrote inside the observed repository")
 
     @unittest.skipIf(os.name == "nt", "The harmless verifier fixture uses a POSIX shell")
     def test_signature_display_must_not_execute_a_configured_program(self) -> None:

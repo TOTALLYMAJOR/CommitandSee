@@ -25,6 +25,7 @@ from public_repositories import public_url, public_metadata, collect_public
 from repository_registry import RepositoryRegistry, validate_state_destination
 from github_auth import API_ROOT, GitHubAuth, GitHubAuthError, _request_json, github_app_config
 from authenticated_repositories import collect_authenticated
+import local_insights
 
 ROOT = Path(__file__).resolve().parent
 DEFAULTS = {
@@ -434,6 +435,7 @@ class LiveState:
         self.registry_revision = 0
         self.lock = threading.Lock()
         self.write_lock = threading.Lock()
+        self.insights_lock = threading.Lock()
         self.stop = threading.Event()
         self.wake = threading.Event()
         self.snapshot = {"schema_version": 1, "title": collector.config["title"],
@@ -538,6 +540,61 @@ class LiveState:
     def github_response(self, result, generation=None):
         return {**result, "github_session_id": self.github_session_id,
                 "github_generation": self.auth.generation if generation is None else generation}
+
+    def inspect_local_changes(self, body, *, inventory=False):
+        """On-demand local evidence, never persisted in exported observations."""
+        required = {"repository"} if inventory else {"repository", "source", "target"}
+        if (not isinstance(body, dict) or set(body) != required
+                or any(not isinstance(value, str) or not value or len(value) > 4096
+                       or "\0" in value for value in body.values())):
+            raise RepositoryError("invalid_input", "Choose a registered local repository, source, and target.")
+        if not self.insights_lock.acquire(blocking=False):
+            raise RepositoryError("scan_busy", "Another local inspection is running. Try again shortly.", 429)
+        try:
+            with self.lock:
+                revision = self.registry_revision
+                repo = next((copy.deepcopy(row) for row in self.snapshot["repositories"]
+                             if row.get("id") == body["repository"]), None)
+                entries = [item for item in self.collector.config["repositories"]
+                           if not item.get("url") and item.get("source_kind", "local") == "local"]
+                active = {item["path"] for item in entries}
+                if (not repo or repo.get("url") or repo.get("source_kind", "local") != "local"
+                        or not active.intersection(repo.get("configured_paths", [repo.get("path")]))
+                        or not repo.get("common_dir") or repo.get("status") == "pending"):
+                    raise RepositoryError("not_local", "Choose an observed, registered local checkout.", 404)
+                identity = (repo["id"], repo["path"], repo["common_dir"])
+                aliases = set(repo.get("configured_paths", [repo["path"]]))
+                selected = next((item for item in entries if item["path"] == repo["path"]),
+                                next(item for item in entries if item["path"] in aliases))
+                exclusions = list(selected.get("exclude_globs", self.collector.config.get("exclude_globs", [])))
+
+            def cancelled():
+                with self.lock:
+                    return self.stop.is_set() or revision != self.registry_revision
+
+            try:
+                if inventory:
+                    result = local_insights.options(repo["path"], cancel_check=cancelled)
+                else:
+                    result = local_insights.analyze(repo["path"], body["source"], body["target"],
+                        exclude_globs=exclusions,
+                        cancel_check=cancelled)
+            except local_insights.InsightError as exc:
+                raise RepositoryError(exc.code, str(exc), exc.status) from None
+            except (OSError, GitError):
+                raise RepositoryError("inspection_unavailable", "Local inspection could not read this repository.", 503) from None
+            with self.lock:
+                if (self.stop.is_set() or revision != self.registry_revision
+                        or not any(item["path"] in aliases and not item.get("url")
+                                   and item.get("source_kind", "local") == "local"
+                                   for item in self.collector.config["repositories"])
+                        or not any((row.get("id"), row.get("path"), row.get("common_dir")) == identity
+                                   and not row.get("url") and row.get("source_kind", "local") == "local"
+                                   for row in self.snapshot["repositories"])):
+                    raise RepositoryError("stale_scan", "Repository selection changed. Start a new inspection.", 409)
+                return result
+        finally:
+            self.insights_lock.release()
 
     def commit_pulls(self, body):
         if (not isinstance(body, dict) or set(body) != {"repository", "sha"}
@@ -884,7 +941,8 @@ def make_handler(state):
                 return
             github_actions = {"/api/github/" + action: action for action in ("start", "cancel", "disconnect")}
             if self.path not in {"/api/repositories", "/api/repositories/remove",
-                                 "/api/github/repositories", "/api/github/import", "/api/commit-pulls", *github_actions}:
+                                 "/api/github/repositories", "/api/github/import", "/api/commit-pulls",
+                                 "/api/local-insights", "/api/local-insights/options", *github_actions}:
                 self.json_response({"error": {"code": "not_found", "message": "Unknown endpoint."}}, 404)
                 return
             try:
@@ -893,7 +951,9 @@ def make_handler(state):
                     raise RepositoryError("invalid_request", "Send a JSON object no larger than 8 KiB.")
                 self.connection.settimeout(5)
                 body = json.loads(self.rfile.read(length))
-                if self.path == "/api/commit-pulls":
+                if self.path in {"/api/local-insights", "/api/local-insights/options"}:
+                    result, status = state.inspect_local_changes(body, inventory=self.path.endswith("/options")), 200
+                elif self.path == "/api/commit-pulls":
                     result, status = state.commit_pulls(body), 200
                 elif self.path in github_actions:
                     result, status = state.github_action(github_actions[self.path], body), 200

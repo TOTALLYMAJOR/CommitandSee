@@ -15,9 +15,10 @@ import sys
 import zipfile
 
 # Prospective package version; changing this recipe does not publish an artifact.
-VERSION = '0.4.0-rc.1'
+VERSION = '0.5.0-rc.2'
 INPUTS = (
     'portable_launcher.py', 'git_dashboard.py', 'git_metrics.py', 'windows_job.py',
+    'local_insights.py',
     'public_repositories.py', 'repository_registry.py', 'dashboard.html', 'demo.html',
     'github_auth.py', 'authenticated_repositories.py', 'github_app_defaults.json',
     'docs/GITHUB-APP-SETUP.md',

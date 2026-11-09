@@ -26,6 +26,8 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
 .chart-controls{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:0 0 12px}.chart-controls input{color-scheme:dark;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text)}.chart-controls [hidden]{display:none}.chart-body .chart-hit{cursor:pointer}#point-dialog{width:min(760px,calc(100% - 24px));max-height:85dvh;overflow:auto}.point-row{padding:12px 0;border-top:1px solid var(--border);display:grid;gap:4px}.point-row button{justify-self:start}.point-row a{overflow-wrap:anywhere}
 #selection-panel .selection-body{padding:0 20px 20px}#selection-panel .selection-body .panel-sub{margin-left:0}.selection-share{display:flex;align-items:center;gap:8px}.selection-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px}.selection-layout h3{margin:16px 0 8px}.selection-layout p{font-size:12px;color:var(--muted)}.selection-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}.selection-actions label{font-size:12px;color:var(--muted)}#selection-totals{font-size:20px;color:var(--text);font-variant-numeric:tabular-nums}.selection-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;overflow-wrap:anywhere}.selection-item:last-child{border-bottom:0}.selection-item small{display:block;color:var(--muted);margin-top:3px}.selection-item .tiny-button{display:block;margin-top:4px}.selection-comparison{display:grid;grid-template-columns:1fr auto auto;gap:6px 12px;font-size:12px;font-variant-numeric:tabular-nums;margin-top:10px}.chart-body{touch-action:pan-y}.chart-selection{fill:#58a6ff25;stroke:#58a6ff;pointer-events:none}#reset-zoom[hidden]{display:none}
 @media(max-width:640px){.selection-layout{grid-template-columns:1fr;gap:6px}#selection-panel .selection-body{padding:15px}.selection-comparison{font-size:11px}.chart-foot{flex-wrap:wrap}}
+.insights-body{padding:16px 20px 20px}.insights-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.insights-controls .field{min-width:0}.insights-controls select{width:100%;max-width:100%;min-width:0}.insights-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.insights-note{font-size:12px;color:var(--muted);margin:8px 0;overflow-wrap:anywhere}.insights-warnings{padding-left:20px;color:var(--amber);font-size:12px;overflow-wrap:anywhere}.insights-files{list-style:none;padding:0;margin:16px 0 0}.insights-file{padding:14px 0;border-top:1px solid var(--border);overflow-wrap:anywhere}.insights-file h3{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}.insights-file .chip{white-space:normal;margin:8px 0}.insights-file p,.insights-file li{font-size:12px;white-space:pre-wrap}.insights-file ul{padding-left:20px}.insights-status{min-height:1.5em;font-size:13px;overflow-wrap:anywhere}.insights-summary{font-size:15px;font-variant-numeric:tabular-nums;margin-top:12px}.insights-result-header{margin-top:18px}
+@media(max-width:760px){.insights-controls{grid-template-columns:1fr}.insights-body{padding:14px}.insights-actions button{flex:1}.insights-controls .field{flex:auto}}
 </style>
 <style>
 /* GitHub connection uses the same local dashboard palette and native dialog. */
@@ -86,6 +88,25 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
     </div>
   </section>
   <section class="panel section-gap" aria-labelledby="repos-heading"><div class="panel-head"><div><h2 id="repos-heading">Repository overview</h2><p class="panel-sub">History follows the configured ref. Working state includes registered worktrees.</p></div><span class="chip" id="repo-count"></span></div><div class="table-wrap" id="repository-table"></div></section>
+  <section class="panel section-gap" id="local-insights-panel" aria-labelledby="local-insights-heading">
+    <div class="panel-head"><div><h2 id="local-insights-heading">Local change insights</h2><p class="panel-sub">Compare actual changes with a target and look for matching saved file versions.</p></div></div>
+    <div class="insights-body">
+      <p id="insights-availability" class="insights-note"></p>
+      <div id="insights-form" hidden>
+        <div class="insights-controls">
+          <div class="field"><label for="insights-repository">Local repository</label><select id="insights-repository"><option value="">Choose a repository</option></select></div>
+          <div class="field"><label for="insights-source">Changes to inspect</label><select id="insights-source" disabled><option value="">Choose a repository first</option></select></div>
+          <div class="field"><label for="insights-target">Compare with</label><select id="insights-target" disabled><option value="">Choose a repository first</option></select></div>
+        </div>
+        <div class="insights-actions"><button id="insights-scan" type="button" disabled>Inspect changes</button><button id="insights-reload" type="button" disabled>Refresh choices</button></div>
+        <p class="insights-note">Inspection is read-only and runs only when requested. Cached remote branches are local observations, not a check of the server.</p>
+      </div>
+      <p id="insights-status" class="insights-status" role="status" aria-live="polite"></p>
+      <p id="insights-error" class="insights-status warning-text" role="alert"></p>
+      <ul id="insights-option-warnings" class="insights-warnings"></ul>
+      <div id="insights-results"></div>
+    </div>
+  </section>
   <section class="panel section-gap" aria-labelledby="work-heading"><div class="panel-head"><div><h2 id="work-heading">Work to review</h2><p class="panel-sub">Local changes, branch candidates, and saved work.</p></div><label class="compact-check"><input type="checkbox" id="show-all">Include clean / integrated</label></div>
     <div class="tabs" role="tablist" aria-label="Work categories"><button class="tab" role="tab" id="tab-worktrees" aria-selected="true" aria-controls="work-table" data-tab="worktrees">Worktrees</button><button class="tab" role="tab" id="tab-branches" aria-selected="false" aria-controls="work-table" data-tab="branches" tabindex="-1">Branches</button><button class="tab" role="tab" id="tab-stashes" aria-selected="false" aria-controls="work-table" data-tab="stashes" tabindex="-1">Stashes</button><button class="tab" role="tab" id="tab-recent" aria-selected="false" aria-controls="work-table" data-tab="recent" tabindex="-1">Recent commits</button></div>
     <div class="scroll-table" id="work-table" role="tabpanel" tabindex="0" aria-labelledby="tab-worktrees"></div><div class="table-note" id="work-note"></div>
@@ -109,7 +130,7 @@ dialog{width:min(460px,calc(100% - 32px));background:#0b0f1a;color:#fff;border:1
     <label for="github-search">Search repositories</label><input id="github-search" type="search" autocomplete="off" placeholder="Filter by owner or repository">
     <ul id="github-repositories" aria-label="Available GitHub repositories"></ul><p id="github-count" role="status"></p>
     <a id="github-access" target="_blank" rel="noopener noreferrer" hidden>Configure repository access on GitHub</a>
-    <div class="github-toolbar"><button id="github-refresh" type="button">Refresh list</button><button id="github-import" type="button" disabled>Add selected</button></div>
+    <div class="github-toolbar"><button id="github-select-all" type="button" disabled>Select all shown</button><button id="github-clear-selection" type="button" disabled>Clear selection</button><button id="github-refresh" type="button">Refresh list</button><button id="github-import" type="button" disabled>Add selected</button></div>
     <p id="github-results" role="status"></p>
   </section>
   <div class="dialog-actions"><button id="github-close" type="button">Close</button></div>
@@ -125,7 +146,7 @@ const asArray=v=>Array.isArray(v)?v:[], string=v=>v===null||v===undefined?'':Str
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=string(text);return n;};
 const svgEl=(tag,attrs={},text)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,string(v));if(text!==undefined)n.textContent=string(text);return n;};
 const badge=(text,cls='')=>el('span','chip '+cls,text);
-let data={},activeTab='worktrees',timer=null,fetching=false,connectionError='',repositoryRevision=0,githubEpoch=null,githubGeneration=null;
+let data={},activeTab='worktrees',timer=null,fetching=false,refreshQueued=false,connectionError='',repositoryRevision=0,githubEpoch=null,githubGeneration=null;
 const removingRepositories=new Set();
 try{data=JSON.parse($('snapshot-data').textContent);}catch(error){connectionError='This file has no readable snapshot. Generate a report with the Python collector.';}finally{$('snapshot-data').textContent='';}
 function stamp(value){if(!value)return'Unknown';const d=new Date(value);if(!Number.isFinite(+d))return'Unknown';try{return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:data.timezone||'UTC'});}catch{return d.toISOString();}}
@@ -651,7 +672,7 @@ function lineCounts(added,deleted){if(!finite(added)||!finite(deleted))return el
 function mainSecondary(main,secondary,cls=''){const n=el('div');n.append(el('div',cls,main));if(secondary)n.append(el('div','secondary',secondary));return n;}
 function dataTable(hostId,rows){const host=$(hostId);host.replaceChildren();if(!rows.length){host.append(el('p','muted','No measured history for this selection.'));return;}host.append(table(['Period','Commits','Added','Deleted'],rows.map(r=>{const action=el('button','tiny-button',periodLabel(r,true));action.onclick=()=>openPoint(r);return [action,num(r.commits),el('span','positive','+'+num(r.added)),el('span','negative','−'+num(r.deleted))];})));}
 function renderRepositories(repos,floor){const host=$('repository-table'),active=host.contains(document.activeElement)?document.activeElement:null,focusAttribute=active?.dataset.removePath?'removePath':'repository',focusKey=active?.dataset[focusAttribute];host.replaceChildren();$('repo-count').textContent=repos.length+' selected';if(!repos.length){empty(host,'No repositories selected','Choose a product or repository, or configure a repository path.');if(focusKey)$('repo-select').focus({preventScroll:true});return;}
-  const rows=repos.map(r=>{const title=el('div'),button=el('button','tiny-button repo-title',r.name||r.path);button.type='button';button.dataset.repository=string(r.path||r.id);button.addEventListener('click',()=>{$('repo-select').value=string(r.path||r.id);render();});title.append(button,el('div','secondary mono',r.path));if(data.live&&data.repository_management&&location.protocol!=='file:'&&r.removable===true){const remove=el('button','tiny-button','Remove');remove.type='button';remove.dataset.removePath=string(r.path||r.id);remove.setAttribute('aria-label','Remove '+(r.name||r.path));remove.disabled=removingRepositories.has(remove.dataset.removePath);if(remove.disabled)remove.textContent='Removing…';remove.addEventListener('click',()=>removeRepository(r,remove));const actions=el('div','secondary');actions.append(remove);title.append(actions);}if(r.source_kind==='public')title.append(badge('Public GitHub','blue'));if(r.source_kind==='github'){title.append(badge('GitHub','blue'),badge(r.private?'Private':'Public',r.private?'warn':''));}const h=historyReady(r),daily=daysFor(r,floor),local=asArray(r.worktrees),unknown=local.filter(w=>typeof w.dirty!=='boolean').length,dirty=local.filter(w=>w.dirty===true).length,branches=sourceReadable(r,'branches')?asArray(r.branches).filter(b=>finite(b.ahead)):[],workComplete=sourceState(r,'worktrees')==='ok'&&!unknown,status=el('div');status.append(badge(r.status==='ok'?'Observed':r.status==='partial'?'Partial':r.status==='pending'?'Pending':r.status==='auth_required'?'Sign in required':'Unavailable',r.status==='ok'?'good':r.status==='partial'?'warn':r.status==='pending'?'blue':'bad'),el('div','secondary',stamp(r.collected_at)));return[title,mainSecondary(r.ref||'HEAD',r.head?string(r.head).slice(0,9):'No resolved commit','mono'),h?(historyPartial(r)?'≥':'')+num(sum(daily,'commits')):'—',h?lineCounts(sum(daily,'added'),sum(daily,'deleted')):el('span','muted','Unavailable'),['public','github'].includes(r.source_kind)?'Not observed (remote)':!sourceReadable(r,'worktrees')||(!workComplete&&!local.length)?'Unknown':mainSecondary(dirty+' dirty / '+local.length+(workComplete?' total':' captured'),unknown?unknown+' unknown':workComplete?'':'Partial observation'),branches.length?branches.filter(b=>b.ahead>0).length+' branches':'—',status];});host.append(table(['Repository','Selected ref','Commits','Added / deleted','Worktrees','Ahead of upstream','Observation'],rows));if(focusKey)([...host.querySelectorAll('button')].find(node=>node.dataset[focusAttribute]===focusKey)||$('repo-select')).focus({preventScroll:true});}
+  const rows=repos.map(r=>{const title=el('div'),button=el('button','tiny-button repo-title',r.name||r.path);button.type='button';button.dataset.repository=string(r.path||r.id);button.addEventListener('click',()=>{const choices=currentInsightChoices();$('repo-select').value=string(r.path||r.id);render();followDashboardSelection(choices);});title.append(button,el('div','secondary mono',r.path));if(data.live&&data.repository_management&&location.protocol!=='file:'&&r.removable===true){const remove=el('button','tiny-button','Remove');remove.type='button';remove.dataset.removePath=string(r.path||r.id);remove.setAttribute('aria-label','Remove '+(r.name||r.path));remove.disabled=removingRepositories.has(remove.dataset.removePath);if(remove.disabled)remove.textContent='Removing…';remove.addEventListener('click',()=>removeRepository(r,remove));const actions=el('div','secondary');actions.append(remove);title.append(actions);}if(r.source_kind==='public')title.append(badge('Public GitHub','blue'));if(r.source_kind==='github'){title.append(badge('GitHub','blue'),badge(r.private?'Private':'Public',r.private?'warn':''));}const h=historyReady(r),daily=daysFor(r,floor),local=asArray(r.worktrees),unknown=local.filter(w=>typeof w.dirty!=='boolean').length,dirty=local.filter(w=>w.dirty===true).length,branches=sourceReadable(r,'branches')?asArray(r.branches).filter(b=>finite(b.ahead)):[],workComplete=sourceState(r,'worktrees')==='ok'&&!unknown,status=el('div');status.append(badge(r.status==='ok'?'Observed':r.status==='partial'?'Partial':r.status==='pending'?'Pending':r.status==='auth_required'?'Sign in required':'Unavailable',r.status==='ok'?'good':r.status==='partial'?'warn':r.status==='pending'?'blue':'bad'),el('div','secondary',stamp(r.collected_at)));return[title,mainSecondary(r.ref||'HEAD',r.head?string(r.head).slice(0,9):'No resolved commit','mono'),h?(historyPartial(r)?'≥':'')+num(sum(daily,'commits')):'—',h?lineCounts(sum(daily,'added'),sum(daily,'deleted')):el('span','muted','Unavailable'),['public','github'].includes(r.source_kind)?'Not observed (remote)':!sourceReadable(r,'worktrees')||(!workComplete&&!local.length)?'Unknown':mainSecondary(dirty+' dirty / '+local.length+(workComplete?' total':' captured'),unknown?unknown+' unknown':workComplete?'':'Partial observation'),branches.length?branches.filter(b=>b.ahead>0).length+' branches':'—',status];});host.append(table(['Repository','Selected ref','Commits','Added / deleted','Worktrees','Ahead of upstream','Observation'],rows));if(focusKey)([...host.querySelectorAll('button')].find(node=>node.dataset[focusAttribute]===focusKey)||$('repo-select')).focus({preventScroll:true});}
 function worktreeState(w){const box=el('div','state-list');if(w.status==='error'||typeof w.dirty!=='boolean')box.append(badge('Unknown','bad'));if(w.status==='partial')box.append(badge('Partial','warn'));for(const [key,label,cls]of [['staged','staged','good'],['unstaged','unstaged','warn'],['untracked','untracked','blue'],['conflicts','conflicts','bad']])if(finite(w[key])&&w[key]>0)box.append(badge(num(w[key])+' '+label,cls));if(w.dirty===false)box.append(badge(w.status==='partial'?'Captured files clean':'Clean',w.status==='partial'?'':'good'));if(w.dirty===true&&!box.childNodes.length)box.append(badge('Changes present','warn'));return box;}
 function fileDetails(w,key){const files=asArray(w.files);if(!files.length)return null;const box=el('details','files');box.dataset.worktree=key;box.append(el('summary','',num(files.length)+' changed paths'));const list=el('ul');for(const f of files.slice(0,100)){const li=el('li');li.append(el('span','',string(f.index||' ')+string(f.worktree||' ')),document.createTextNode(string(f.path)));list.append(li);}if(files.length>100)list.append(el('li','muted','First 100 paths shown; export JSON for the complete captured list.'));box.append(list);return box;}
 function renderWork(repos){const host=$('work-table'),all=$('show-all').checked,opened=new Set([...host.querySelectorAll('details.files[open]')].map(node=>node.dataset.worktree)),focused=host.contains(document.activeElement)?document.activeElement.closest('details.files')?.dataset.worktree:null,scrollTop=host.scrollTop,scrollLeft=host.scrollLeft;host.replaceChildren();host.setAttribute('aria-labelledby','tab-'+activeTab);let rows=[],headers=[],note='',available=true;const source=activeTab==='recent'?'history':activeTab,incomplete=repos.some(r=>sourceState(r,source)!=='ok');
@@ -663,6 +684,129 @@ function renderWork(repos){const host=$('work-table'),all=$('show-all').checked,
   if(focused){const detail=[...host.querySelectorAll('details.files')].find(node=>node.dataset.worktree===focused);(detail?.querySelector('summary')||host).focus({preventScroll:true});}host.scrollTop=scrollTop;host.scrollLeft=scrollLeft;
 }
 function renderCoverage(repos){const items=[];for(const error of asArray(data.errors))items.push(string(typeof error==='object'?error.message||JSON.stringify(error):error));for(const r of repos){for(const source of ['history','worktrees','branches','stashes']){const state=sourceState(r,source);if(state!=='ok')items.push((r.name||r.path)+': '+source+' observation '+(state==='pending'?'is pending':state==='not_requested'?'was not requested':state==='error'?'is unavailable':'is partial')+'.');}for(const e of [...asArray(r.errors),...asArray(r.warnings)])items.push((r.name||r.path)+': '+string(e));if(r.history?.truncated)items.push(r.name+': history reached the collection limit. Chart totals are partial.');if(r.history?.shallow)items.push(r.name+': shallow Git history. Earlier commits may be unavailable.');for(const w of asArray(r.worktrees)){for(const e of asArray(w.errors))items.push((r.name||r.path)+' / '+(w.branch||w.path)+': '+string(e));if(finite(w.observation_gap_seconds)&&w.observation_gap_seconds>Math.max(120,Number(data.refresh_seconds||30)*4))items.push((r.name||r.path)+' / '+(w.branch||w.path)+': '+num(Math.round(w.observation_gap_seconds/60))+' minute gap between observations; elapsed age is not verified inactivity.');}}const unique=[...new Set(items)],host=$('coverage-content');host.replaceChildren();$('coverage-summary').textContent=!repos.length?'Observation coverage · no repositories selected':unique.length?'Observation coverage · '+unique.length+' notes':'Observation coverage · no reported collection errors';if(unique.length){const list=el('ul');for(const item of unique)list.append(el('li','',item));host.append(list);}else host.append(el('p','muted',repos.length?'All configured observations in this selection returned without reported errors. Cached remote refs are still only as current as your local Git data.':'Choose a configured repository to inspect its observation coverage.'));}
+// Local inspection stays separate from the exportable observation snapshot.
+let insightsVersion=0,insightsController=null,insightsIdentity='',insightsBusy='',insightsOptions=null,insightsRepoList='',insightsTimer=null;
+function insightRepos(){return data.live&&!data.demo&&location.protocol!=='file:'?selected().filter(repo=>!['public','github'].includes(repo.source_kind)&&['ok','partial'].includes(repo.status)&&typeof repo.id==='string'):[];}
+function insightIdentity(repo){return repo?JSON.stringify([repo.id,repo.path,repo.common_dir,repo.source_kind||'local',asArray(repo.configured_paths)]):'';}
+function cancelInsights(clearChoices=false){
+  clearTimeout(insightsTimer);insightsTimer=null;
+  insightsVersion++;insightsController?.abort();insightsController=null;insightsBusy='';
+  $('insights-results').replaceChildren();$('insights-status').textContent='';$('insights-error').textContent='';
+  if(clearChoices){insightsOptions=null;$('insights-option-warnings').replaceChildren();for(const id of ['insights-source','insights-target'])$(id).replaceChildren(new Option('Choose a repository first',''));}
+  updateInsightControls();
+}
+function updateInsightControls(){
+  const options=Boolean(insightsOptions),repo=Boolean($('insights-repository').value);
+  $('insights-source').disabled=!options||insightsBusy==='options';$('insights-target').disabled=!options||insightsBusy==='options';
+  $('insights-scan').disabled=!options||Boolean(insightsBusy)||!$('insights-source').value||!$('insights-target').value;
+  $('insights-scan').textContent=insightsBusy==='scan'?'Inspecting…':'Inspect changes';
+  $('insights-reload').disabled=!repo||Boolean(insightsBusy);
+  $('insights-results').setAttribute('aria-busy',String(insightsBusy==='scan'));
+}
+function syncInsights(){
+  const repos=insightRepos(),picker=$('insights-repository'),list=JSON.stringify(repos.map(repo=>[repo.id,repo.name||repo.path]));
+  if(list!==insightsRepoList){optionList(picker,repos.map(repo=>[repo.id,string(repo.name||repo.path)]),'Choose a repository');insightsRepoList=list;}
+  const repo=repos.find(repo=>repo.id===picker.value),identity=insightIdentity(repo);
+  if(identity!==insightsIdentity){cancelInsights(true);insightsIdentity=identity;}
+  $('insights-form').hidden=!repos.length;
+  $('insights-availability').textContent=!data.live||data.demo||location.protocol==='file:'?'Open the live dashboard with a local checkout to inspect changes. Saved reports and the synthetic demo cannot run local inspection.':!repos.length?'No readable local checkout in this selection. Choose or add a local repository; remote GitHub sources do not expose local work.':'Choose a local repository, then a branch, stash, working files, or staged files to inspect.';
+  updateInsightControls();
+}
+async function insightRequest(endpoint,body,controller){
+  for(let attempt=0;;attempt++){
+    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,cache:'no-store'});
+    const result=await response.json();
+    if(response.status===429&&result.error?.code==='scan_busy'&&attempt<10){
+      await new Promise((resolve,reject)=>{
+        const abort=()=>{clearTimeout(wait);controller.signal.removeEventListener('abort',abort);reject(new DOMException('Selection changed','AbortError'));};
+        const wait=setTimeout(()=>{controller.signal.removeEventListener('abort',abort);resolve();},2000);
+        controller.signal.addEventListener('abort',abort,{once:true});if(controller.signal.aborted)abort();
+      });continue;
+    }
+    if(!response.ok)throw new Error(result.error?.message||'Local inspection is unavailable. Try again.');
+    return result;
+  }
+}
+function currentInsightChoices(){return {source:$('insights-source').value,target:$('insights-target').value};}
+async function loadInsightOptions({inspect=false,choices=currentInsightChoices()}={}){
+  const previousSource=choices.source,previousTarget=choices.target;
+  cancelInsights(true);
+  const repo=insightRepos().find(repo=>repo.id===$('insights-repository').value);
+  if(!repo)return;
+  insightsIdentity=insightIdentity(repo);const version=insightsVersion,controller=new AbortController();insightsController=controller;insightsBusy='options';updateInsightControls();
+  $('insights-status').textContent='Reading local branches, stashes, and worktrees…';
+  const timeout=setTimeout(()=>controller.abort(),60000);
+  try{
+    const result=await insightRequest('/api/local-insights/options',{repository:repo.id},controller);
+    if(version!==insightsVersion)return;
+    const choices=key=>asArray(result[key]).filter(item=>typeof item?.id==='string'&&typeof item?.label==='string');
+    insightsOptions={sources:choices('sources'),targets:choices('targets')};
+    for(const [id,key,placeholder]of [['insights-source','sources','Choose changes to inspect'],['insights-target','targets','Choose a target']]){
+      $(id).replaceChildren(new Option(placeholder,''));for(const item of insightsOptions[key])$(id).add(new Option(item.label,item.id));
+    }
+    if(insightsOptions.sources.some(item=>item.id===previousSource))$('insights-source').value=previousSource;
+    if(insightsOptions.targets.some(item=>item.id===previousTarget))$('insights-target').value=previousTarget;
+    else if(insightsOptions.targets.some(item=>item.id===result.default_target))$('insights-target').value=result.default_target;
+    $('insights-option-warnings').replaceChildren(...asArray(result.warnings).map(message=>el('li','',message)));
+    $('insights-status').textContent=insightsOptions.sources.length&&insightsOptions.targets.length?'Choose changes and a target, then inspect.':'No comparable source and target are available. Commit a starting point or refresh choices after local Git changes.';
+  }catch(error){if(version===insightsVersion){$('insights-status').textContent='';$('insights-error').textContent=error.name==='AbortError'?'Reading local choices timed out. Refresh choices to try again.':error.message;}}
+  finally{clearTimeout(timeout);if(version===insightsVersion){insightsBusy='';insightsController=null;updateInsightControls();if(inspect&&insightsOptions&&$('insights-source').value&&$('insights-target').value)queueInsightScan();}}
+}
+function queueInsightScan(){
+  cancelInsights();
+  if(!insightsOptions||!$('insights-source').value||!$('insights-target').value){$('insights-status').textContent='Choose changes and a target to inspect.';return;}
+  $('insights-status').textContent='Updating comparison…';
+  insightsTimer=setTimeout(inspectLocalChanges,200);
+}
+function followDashboardSelection(choices){
+  const repos=insightRepos();
+  if(repos.length===1&&($('insights-repository').value!==repos[0].id||!insightsOptions)){
+    $('insights-repository').value=repos[0].id;loadInsightOptions({inspect:true,choices});
+  }
+}
+function renderInsightResult(result){
+  const host=$('insights-results'),summary=result.summary||{},files=asArray(result.files);
+  host.replaceChildren();
+  host.append(el('h3','insights-result-header',string(result.source?.label)+' → '+string(result.target?.label)),
+    el('p','insights-note','Inspected '+stamp(result.generated_at)+'. These results describe that scan; inspect again after local changes.'),
+    el('p','insights-summary',num(summary.present)+' present · '+num(summary.remaining)+' remaining · '+num(summary.partial)+' partly present · '+num(summary.uncertain)+' uncertain files'),
+    el('p','insights-note','Presence describes inspected file content, not equivalent behavior or tested integration. Saved-copy checks look for identical saved file versions within bounded local locations. No match does not prove that the edits are unique; they may exist in a differently edited file.'));
+  const warnings=asArray(result.warnings);if(warnings.length){const list=el('ul','insights-warnings');list.append(...warnings.map(message=>el('li','',message)));host.append(list);}
+  const coverage=result.coverage||{},scope=[];
+  if(coverage.saved_search_limited===true)host.append(badge('Saved-copy search limited','warn'));
+  if(finite(summary.no_matching_saved_version)&&summary.no_matching_saved_version>0)host.append(el('p','insights-note',num(summary.no_matching_saved_version)+' files had no identical saved version in the inspected locations.'));
+  for(const [key,label]of [['files_checked','Files checked'],['saved_locations_checked','Saved locations checked'],['saved_trees_checked','Saved trees checked'],['refs_checked','Refs checked'],['reflog_entries_checked','Reflog entries checked']])if(finite(coverage[key]))scope.push(label+': '+num(coverage[key]));
+  if(scope.length)host.append(el('p','insights-note',scope.join(' · ')));
+  if(!files.length){host.append(el('p','insights-note','No changed files were returned for this comparison. Check the coverage notes before drawing conclusions.'));return;}
+  const list=el('ul','insights-files');
+  const integration={present:['Already present','good'],remaining:['Remaining','blue'],partial:['Partly present','warn'],uncertain:['Uncertain','warn']};
+  for(const file of files){
+    const item=el('li','insights-file'),[label,tone]=integration[file.integration]||integration.uncertain;
+    item.append(el('h3','',file.path),badge(label,tone),el('p','',file.explanation));
+    const preservation=file.preservation==='matching_saved_version'?'Matching saved file version':file.preservation==='no_matching_saved_version'?'No identical saved version found':'Saved-copy check uncertain';
+    item.append(el('p','insights-note',preservation));
+    if(asArray(file.saved_copies).length){const copies=el('ul');copies.setAttribute('aria-label','Matching saved locations');copies.append(...file.saved_copies.map(copy=>el('li','',copy)));item.append(copies);}
+    list.append(item);
+  }
+  host.append(list);
+}
+async function inspectLocalChanges(){
+  if(insightsBusy||!insightsOptions||$('insights-scan').disabled)return;
+  const repository=$('insights-repository').value,source=$('insights-source').value,target=$('insights-target').value;
+  cancelInsights();const version=insightsVersion,controller=new AbortController();insightsController=controller;insightsBusy='scan';updateInsightControls();
+  $('insights-status').textContent='Inspecting local changes and matching saved versions. Inspection does not write to your repository…';
+  const timeout=setTimeout(()=>controller.abort(),90000);
+  try{
+    const result=await insightRequest('/api/local-insights',{repository,source,target},controller);
+    if(version!==insightsVersion)return;
+    renderInsightResult(result);$('insights-status').textContent='Inspection complete. '+num(result.summary?.files)+' files reported; review uncertainty and coverage below.';
+  }catch(error){if(version===insightsVersion){$('insights-status').textContent='';$('insights-error').textContent=error.name==='AbortError'?'Inspection timed out. No result is shown; try again with a smaller source.':error.message;}}
+  finally{clearTimeout(timeout);if(version===insightsVersion){insightsBusy='';insightsController=null;updateInsightControls();}}
+}
+$('insights-repository').addEventListener('change',()=>loadInsightOptions({inspect:true}));
+$('insights-reload').addEventListener('click',()=>loadInsightOptions({inspect:true}));
+for(const id of ['insights-source','insights-target'])$(id).addEventListener('change',queueInsightScan);
+$('insights-scan').addEventListener('click',inspectLocalChanges);
 function renderConnection(){const chip=$('connection'),label=$('connection-label'),dot=chip.querySelector('.dot'),age=(Date.now()-Date.parse(data.generated_at))/1000,stale=data.live&&Number.isFinite(age)&&age>Math.max(120,Number(data.refresh_seconds||30)*4);chip.className='chip '+(connectionError?'bad':data.collection_running?'blue':stale?'warn':data.live?'good':'');label.textContent=connectionError?'Collector unavailable':data.collection_running?'Scanning…':stale?'Last snapshot is stale':data.live?'Live · '+(data.refresh_seconds||30)+'s refresh':data.demo?'Demo snapshot':'Saved snapshot';dot.className='dot'+(data.live&&!connectionError&&!stale?' live':'');$('updated').textContent='Observed '+stamp(data.generated_at);$('connection-banner').hidden=!connectionError;$('connection-banner').textContent=connectionError?connectionError+' Showing the last available observation from '+stamp(data.generated_at)+'.':'';$('add-button').hidden=!(data.live&&data.repository_management&&location.protocol!=='file:');$('github-button').hidden=$('add-button').hidden;$('refresh-button').disabled=fetching||!data.live;$('refresh-button').title=data.live?'Read the latest local collector snapshot':'A saved report is static. Run the Python dashboard for automatic refresh.';}
 function render(){
   const scope=selectionScopeKey();
@@ -674,9 +818,9 @@ function render(){
     panel.querySelector('.panel-sub').textContent=intervalLabel[interval]+(type==='line'?' commit count':' lines added and deleted');
     panel.querySelector('summary').textContent='View '+intervalLabel[interval].toLowerCase()+' data';
     chart(id,rows,type);dataTable(tableId,rows);
-  }$('commits-caption').textContent=ready+'/'+repos.length+' histories available'+(partial?' · partial totals':' · non-merge commits');$('frequency-caption').textContent=partial?'Captured text-line changes · partial totals':'Committed text-line changes · binary LOC excluded';renderRepositories(repos,floor);renderWork(repos);renderCoverage(repos);renderConnection();$('footer-observation').textContent='Snapshot '+stamp(data.generated_at)+' · '+(data.timezone||'UTC');}
+  }$('commits-caption').textContent=ready+'/'+repos.length+' histories available'+(partial?' · partial totals':' · non-merge commits');$('frequency-caption').textContent=partial?'Captured text-line changes · partial totals':'Committed text-line changes · binary LOC excluded';renderRepositories(repos,floor);renderWork(repos);renderCoverage(repos);syncInsights();renderConnection();$('footer-observation').textContent='Snapshot '+stamp(data.generated_at)+' · '+(data.timezone||'UTC');}
 async function refresh(){
-  if(fetching||!data.live)return;fetching=true;renderConnection();
+  if(!data.live)return;if(fetching){refreshQueued=true;return;}clearTimeout(timer);fetching=true;renderConnection();
   let revision=repositoryRevision,reconcileSession=null;
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
   try{
@@ -693,7 +837,7 @@ async function refresh(){
       if(!authResponse.ok)throw new Error('Could not verify the changed GitHub session');
       const authStatus=await authResponse.json();
       if(revision!==repositoryRevision)return;
-      if(reconcileSession===githubSession){applyGithubStatus(authStatus);if(githubCurrent(reconcileSession)&&authStatus.status==='connected')loadGithubRepositories(reconcileSession);scheduleGithub(reconcileSession);}
+      if(reconcileSession===githubSession){applyGithubStatus(authStatus,false);if(githubCurrent(reconcileSession)&&authStatus.status==='connected')loadGithubRepositories(reconcileSession);scheduleGithub(reconcileSession);}
       else rememberGithubVersion(authStatus);
       revision=repositoryRevision;
       if(next.github_session_id!==githubEpoch||next.github_generation!==githubGeneration)return;
@@ -702,9 +846,9 @@ async function refresh(){
     if(revision!==repositoryRevision)return;
     data=next;connectionError='';filters();render();
   }catch(error){if(revision===repositoryRevision){connectionError='Cannot reach the local collector. '+(error.name==='AbortError'?'The request timed out.':error.message);renderConnection();if(reconcileSession===githubSession&&$('github-dialog').open){githubStatus={status:'error'};$('github-error').textContent='Could not verify the GitHub connection. Retry sign-in or reopen this dialog.';renderGithub();}}}
-  finally{clearTimeout(timeout);fetching=false;renderConnection();schedule(revision!==repositoryRevision?0:undefined);}
+  finally{clearTimeout(timeout);fetching=false;renderConnection();const again=refreshQueued||revision!==repositoryRevision;refreshQueued=false;if(again)refresh();else schedule();}
 }
-function schedule(delay){clearTimeout(timer);if(data.live)timer=setTimeout(refresh,delay??(data.collection_running?3:Math.max(5,Number(data.refresh_seconds)||30))*1000);}
+function schedule(delay){clearTimeout(timer);if(data.live)timer=setTimeout(refresh,delay??(data.collection_running||asArray(data.repositories).some(repo=>repo.status==='pending')?3:Math.max(5,Number(data.refresh_seconds)||30))*1000);}
 async function removeRepository(repo,button){
   const path=string(repo.path||repo.id),name=string(repo.name||path);
   if(removingRepositories.has(path)||!confirm('Remove '+name+' from this dashboard?\nRepository files and cached history are kept.'))return;
@@ -721,7 +865,7 @@ async function removeRepository(repo,button){
   }catch(error){$('repository-message').textContent='Could not remove '+name+': '+error.message;}
   finally{removingRepositories.delete(path);for(const node of document.querySelectorAll('[data-remove-path]'))if(node.dataset.removePath===path){node.disabled=false;node.textContent='Remove';}}
 }
-$('product-select').addEventListener('change',()=>{filters();render();});$('repo-select').addEventListener('change',render);$('range-select').addEventListener('change',render);
+$('product-select').addEventListener('change',()=>{const choices=currentInsightChoices();filters();render();followDashboardSelection(choices);});$('repo-select').addEventListener('change',()=>{const choices=currentInsightChoices();render();followDashboardSelection(choices);});$('range-select').addEventListener('change',render);
 $('interval-select').addEventListener('change',()=>{cancelGrouping();selectedRange=zoomRange;render();});
 $('chart-day').addEventListener('change',()=>{resetSelection();render();});$('show-all').addEventListener('change',()=>renderWork(selected()));$('refresh-button').addEventListener('click',refresh);
 const tabs=[...document.querySelectorAll('[data-tab]')];for(const tab of tabs){tab.addEventListener('click',()=>{activeTab=tab.dataset.tab;for(const t of tabs){t.setAttribute('aria-selected',String(t===tab));t.tabIndex=t===tab?0:-1;}$('show-all').disabled=activeTab==='recent'||activeTab==='stashes';renderWork(selected());});tab.addEventListener('keydown',e=>{const i=tabs.indexOf(tab),next=e.key==='ArrowRight'?(i+1)%tabs.length:e.key==='ArrowLeft'?(i+tabs.length-1)%tabs.length:null;if(next!==null){e.preventDefault();tabs[next].click();tabs[next].focus();}});}
@@ -757,7 +901,7 @@ let githubRepositories=[],githubSelected=new Set();
 const githubRequests=new Set();
 function githubCurrent(session){return session===githubSession&&$('github-dialog').open;}
 function resetGithubRequests(){githubSession++;clearTimeout(githubTimer);githubTimer=null;for(const controller of githubRequests)controller.abort();githubRequests.clear();githubBusy='';return githubSession;}
-function clearGithubRepositories(){githubRepositories=[];githubSelected.clear();githubListLoaded=false;githubListMessage='';$('github-search').value='';$('github-repositories').replaceChildren();$('github-account').textContent='';$('github-count').textContent='';$('github-results').textContent='';}
+function clearGithubRepositories(){githubRepositories=[];githubSelected.clear();githubAdded.clear();githubListLoaded=false;githubListMessage='';$('github-search').value='';$('github-repositories').replaceChildren();$('github-account').textContent='';$('github-count').textContent='';$('github-results').textContent='';}
 function suspendGithubDialog(){const session=resetGithubRequests();clearGithubRepositories();githubStatus=null;$('github-error').textContent='';$('github-status').textContent='Checking changed GitHub connection…';renderGithub();discardGithubObservations(true);return session;}
 async function githubRequest(action,session,body){
   const controller=new AbortController();githubRequests.add(controller);
@@ -790,6 +934,8 @@ function renderGithub(){
   $('github-refresh').disabled=Boolean(githubBusy);$('github-search').disabled=githubBusy==='import';
   $('github-import').disabled=Boolean(githubBusy)||!githubSelected.size;
   $('github-import').textContent=githubBusy==='import'?'Adding selected…':'Add selected';
+  $('github-select-all').disabled=Boolean(githubBusy)||!visibleGithubRepositories().some(repo=>!githubConfigured(repo.id)&&!githubSelected.has(repo.id));
+  $('github-clear-selection').disabled=Boolean(githubBusy)||!githubSelected.size;
   $('github-code').textContent=githubStatus?.user_code||'Preparing code…';
   githubLink('github-verify',status==='pending'&&githubStatus?.user_code?githubStatus.verification_uri:null,'device');
   githubLink('github-access',status==='connected'?githubStatus?.installation_url:null,'installation');
@@ -797,27 +943,32 @@ function renderGithub(){
   $('github-button').textContent=status==='connected'?'GitHub repositories':'Connect GitHub';
   if($('github-dialog').open&&active&&(active.disabled||!active.getClientRects().length))$('github-title').focus({preventScroll:true});
 }
+const githubAdded=new Set();
+function githubConfigured(id){return githubAdded.has(id)||asArray(data.repositories).some(repo=>repo.source_kind==='github'&&repo.github_repository_id===id&&repo.github_account_id===githubStatus?.user?.id);}
+function visibleGithubRepositories(){const query=$('github-search').value.trim().toLocaleLowerCase();return githubRepositories.filter(repo=>repo.full_name.toLocaleLowerCase().includes(query));}
 function renderGithubRepositories(){
   const host=$('github-repositories'),focused=host.contains(document.activeElement)?document.activeElement.dataset.githubId:null,scrollTop=host.scrollTop;
-  const query=$('github-search').value.trim().toLocaleLowerCase(),visible=githubRepositories.filter(repo=>repo.full_name.toLocaleLowerCase().includes(query));
+  const visible=visibleGithubRepositories();
+  for(const id of githubSelected)if(githubConfigured(id))githubSelected.delete(id);
   host.replaceChildren();
   for(const repo of visible){
     const row=el('li','github-repository'),label=el('label'),input=el('input'),copy=el('span','github-repository-copy');
-    input.type='checkbox';input.dataset.githubId=String(repo.id);input.checked=githubSelected.has(repo.id);input.disabled=Boolean(githubBusy);
+    input.type='checkbox';input.dataset.githubId=String(repo.id);input.checked=githubSelected.has(repo.id);input.disabled=Boolean(githubBusy)||githubConfigured(repo.id);
     input.addEventListener('change',()=>{
-      if(input.checked&&githubSelected.size>=50){input.checked=false;$('github-error').textContent='Choose up to 50 repositories at a time.';return;}
       input.checked?githubSelected.add(repo.id):githubSelected.delete(repo.id);$('github-error').textContent='';renderGithub();updateGithubCount(visible.length);
     });
     copy.append(el('span','github-repository-name',repo.full_name),badge(repo.private?'Private':'Public',repo.private?'warn':'blue'));
     if(repo.archived)copy.append(badge('Archived'));
+    if(githubConfigured(repo.id))copy.append(badge('Already added'));
     label.append(input,copy);row.append(label);host.append(row);
   }
   updateGithubCount(visible.length);
+  renderGithub();
   if(focused)([...host.querySelectorAll('input')].find(node=>node.dataset.githubId===focused)||$('github-search')).focus({preventScroll:true});
   host.scrollTop=scrollTop;
 }
 function updateGithubCount(visibleCount){
-  $('github-count').textContent=githubBusy==='list'?'Loading repositories…':(githubListLoaded?(githubRepositories.length?visibleCount+' of '+githubRepositories.length+' repositories shown. '+githubSelected.size+' selected (up to 50).':'No repositories available to this sign-in.'):'Repository list has not loaded.')+(githubListMessage?' '+githubListMessage:'');
+  $('github-count').textContent=githubBusy==='list'?'Loading repositories…':(githubListLoaded?(githubRepositories.length?visibleCount+' of '+githubRepositories.length+' repositories shown. '+githubSelected.size+' selected.':'No repositories available to this sign-in.'):'Repository list has not loaded.')+(githubListMessage?' '+githubListMessage:'');
 }
 function rememberGithubVersion(status){
   if(typeof status.github_session_id!=='string'||!Number.isSafeInteger(status.generation))return;
@@ -835,14 +986,16 @@ function discardGithubObservations(pending){
   data.repositories=asArray(data.repositories).map(repo=>repo.source_kind!=='github'?repo:{...repo,history:null,head:null,collected_at:null,worktrees:[],branches:[],remote_branches:[],stashes:[],status:pending?'pending':'auth_required',authentication_required:!pending,source_status:{history:pending?'pending':'error',worktrees:'not_requested',branches:'not_requested',stashes:'not_requested'},errors:pending?[]:['Sign in to GitHub to observe this repository.'],warnings:[]});
   filters();render();
 }
-function applyGithubStatus(result){
+function applyGithubStatus(result,refreshOverview=true){
   if(!['unconfigured','disconnected','pending','connected','error'].includes(result.status))throw new Error('The app returned an invalid GitHub status.');
+  const newlyConnected=result.status==='connected'&&(githubStatus?.status!=='connected'||githubEpoch!==result.github_session_id||githubGeneration!==result.generation);
   rememberGithubVersion(result);
   githubStatus={status:result.status,user:result.user?{id:result.user.id,login:string(result.user.login)}:null,user_code:result.status==='pending'?string(result.user_code):'',verification_uri:result.verification_uri,installation_url:result.installation_url};
   if(result.status!=='connected')clearGithubRepositories();
   $('github-error').textContent=result.status==='error'?string(result.message):'';
   $('github-status').textContent=result.status==='error'?'Sign-in needs attention.':string(result.message)||(result.status==='pending'?'Waiting for authorization on GitHub.':result.status==='connected'?'Choose the repositories you want to add.':result.status==='disconnected'?'Sign in to discover repositories you can access.':'GitHub sign-in is not configured.');
   renderGithub();
+  if(newlyConnected&&refreshOverview)refresh();
 }
 function scheduleGithub(session){clearTimeout(githubTimer);if(githubCurrent(session)&&githubStatus?.status==='pending')githubTimer=setTimeout(()=>readGithubStatus(session),2000);}
 async function readGithubStatus(session,discover=true){
@@ -858,7 +1011,7 @@ async function loadGithubRepositories(session=githubSession){
   githubBusy='list';$('github-error').textContent='';renderGithub();renderGithubRepositories();
   try{
     const result=await githubRequest('repositories',session,{});if(!result)return;
-    githubRepositories=asArray(result.repositories).filter(repo=>Number.isSafeInteger(repo.id)&&repo.id>0&&typeof repo.full_name==='string').map(repo=>({id:repo.id,full_name:repo.full_name,private:repo.private===true,archived:repo.archived===true}));
+    githubRepositories=[...new Map(asArray(result.repositories).filter(repo=>Number.isSafeInteger(repo.id)&&repo.id>0&&typeof repo.full_name==='string').map(repo=>[repo.id,{id:repo.id,full_name:repo.full_name,private:repo.private===true,archived:repo.archived===true}])).values()];
     const available=new Set(githubRepositories.map(repo=>repo.id));githubSelected=new Set([...githubSelected].filter(id=>available.has(id)));githubListLoaded=true;
     githubListMessage=(result.truncated?'This list is partial. ':'')+string(result.message);
   }catch(error){if(githubCurrent(session))$('github-error').textContent=error.message;}
@@ -894,17 +1047,27 @@ $('github-cancel').addEventListener('click',()=>githubAuthAction('cancel'));
 $('github-disconnect').addEventListener('click',()=>githubAuthAction('disconnect'));
 $('github-refresh').addEventListener('click',()=>loadGithubRepositories());
 $('github-search').addEventListener('input',renderGithubRepositories);
+$('github-select-all').addEventListener('click',()=>{if(githubBusy)return;for(const repo of visibleGithubRepositories())if(!githubConfigured(repo.id))githubSelected.add(repo.id);renderGithubRepositories();});
+$('github-clear-selection').addEventListener('click',()=>{if(githubBusy)return;githubSelected.clear();renderGithubRepositories();});
 $('github-import').addEventListener('click',async()=>{
   if(githubBusy||!githubSelected.size)return;
   const session=githubSession,ids=[...githubSelected],names=new Map(githubRepositories.map(repo=>[repo.id,repo.full_name]));
   githubBusy='import';$('github-error').textContent='';$('github-results').textContent='Adding selected repositories…';renderGithub();renderGithubRepositories();
   try{
-    const result=await githubRequest('import',session,{repository_ids:ids});if(!result)return;
-    const imported=asArray(result.imported),existing=asArray(result.already_configured),failed=asArray(result.failed);
-    for(const repo of [...imported,...existing])githubSelected.delete(repo.id);
-    $('github-results').textContent=imported.length+' added · '+existing.length+' already configured · '+failed.length+' failed.'+(failed.length?'\n'+failed.map(repo=>(names.get(repo.id)||'Repository')+': '+string(repo.message||'Could not add this repository.')).join('\n'):'')+(imported.length?' Observation is queued.':'');
-    if(imported.length){repositoryRevision++;$('repository-message').textContent=imported.length+' GitHub repositor'+(imported.length===1?'y':'ies')+' added. Observation is queued.';await refresh();}
-  }catch(error){if(githubCurrent(session)){$('github-error').textContent=error.message;$('github-results').textContent='Import could not be confirmed. Saved choices may still have changed; refresh the overview or retry selected repositories.';}}
+    const imported=[],existing=[],failed=[];
+    for(let offset=0;offset<ids.length;offset+=50){
+      if(!githubCurrent(session)||githubStatus?.status!=='connected')return;
+      const batch=ids.slice(offset,offset+50),result=await githubRequest('import',session,{repository_ids:batch});if(!result)return;
+      const accepted=new Set(batch),confirmed=new Set();
+      for(const [key,rows]of [['imported',imported],['already_configured',existing],['failed',failed]])for(const repo of asArray(result[key])){
+        if(!accepted.has(repo.id)||confirmed.has(repo.id))continue;confirmed.add(repo.id);rows.push(repo);
+        if(key!=='failed'){githubSelected.delete(repo.id);githubAdded.add(repo.id);}
+      }
+      for(const id of batch)if(!confirmed.has(id))failed.push({id,message:'No result was returned; retry this repository.'});
+      $('github-results').textContent=imported.length+' added · '+existing.length+' already configured · '+failed.length+' failed.'+(failed.length?'\n'+failed.map(repo=>(names.get(repo.id)||'Repository')+': '+string(repo.message||'Could not add this repository.')).join('\n'):'')+(offset+batch.length<ids.length?' Adding remaining selections…':imported.length?' Observation is queued.':'');
+      repositoryRevision++;$('repository-message').textContent=imported.length+' GitHub repositor'+(imported.length===1?'y':'ies')+' added. Observation is queued.';await refresh();
+    }
+  }catch(error){if(githubCurrent(session)){$('github-error').textContent=error.message;$('github-results').textContent+='\nAdding stopped. Unconfirmed choices remain selected; retry them when ready.';repositoryRevision++;refresh();}}
   finally{if(githubCurrent(session)){githubBusy='';renderGithub();renderGithubRepositories();}}
 });
 /* Native WebGL contour field; capped rendering and static accessible fallback. */

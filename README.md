@@ -150,6 +150,20 @@ comparisons from embedded data, with browser search links for PRs.
 Collect a fresh snapshot to add timestamped details to older reports.
 
 
+### Inspect remaining changes and saved versions (source build)
+
+The **Local change insights** panel compares a local branch, stash, working
+files, or staged files with a selected local target. Run an inspection to see
+which captured changes are present, remaining, partial, or uncertain, and where
+an identical saved version of each changed file was found.
+
+Results describe inspected local content, not deployment, semantic correctness,
+or backup safety. Missing exact copies do not establish that edits are unique.
+Scans are bounded, read-only, and run only on demand; results are kept out of
+exported snapshots. See [Local change insights](docs/LOCAL-INSIGHTS.md) for source
+selection, interpretation, and coverage limits. The published v0.4.0-rc.1 ZIP
+predates these features; use the updated source or a later candidate build.
+
 ## Alternatives and where CommitandSee fits
 
 Other tools cover parts of this workflow, and some go much further in editing
@@ -234,6 +248,12 @@ registration.
 3. Search the repository list, check the repositories to monitor, and choose
    **Add selected**. Only selected repositories are saved and queued for history
    collection; signing in does not add every accessible repository.
+
+Source builds also offer **Select all shown** (respecting your search and skipping
+already-added repositories) and **Clear selection**. Large selections are added
+in batches; failed or unconfirmed repositories stay selected for retry. Closing
+the dialog stops further batches; a request already sent may still complete.
+GitHub connection and import changes refresh the overview without a page reload.
 
 The app requests read-only repository access. A repository must be available to
 both your account and the app installation. An empty list or pending organization

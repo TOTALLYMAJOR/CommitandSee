@@ -275,26 +275,31 @@ test('disconnect rejects stale private snapshots and a verified server restart r
   assert.doesNotMatch(await page.locator('#repository-table').textContent(), /STALE_SERVER_SENTINEL/);
 });
 
-test('large repository lists retain a 50-choice limit and reachable mobile actions', async t => {
+test('large repository lists allow bulk selection with reachable mobile actions', async t => {
   const {page, state} = await fixture(t, {auth: auth('connected')});
   state.repositories = Array.from({length: 500}, (_, i) => ({id: i + 100, full_name: 'fixture/repository-' + String(i).padStart(3, '0'), private: i % 2 === 0}));
   await page.setViewportSize({width: 390, height: 844});
   await open(page);
   await until(async () => await page.locator('[data-github-id]').count() === 500, 'large list loads');
   assert.equal(await page.locator('#github-import').isDisabled(), true);
-  // Use the actual checkbox events; the list stays bounded and scrollable.
-  for (let i = 0; i < 50; i++) await page.locator('[data-github-id="' + (i + 100) + '"]').check();
-  await page.locator('[data-github-id="150"]').click();
-  assert.equal(await page.locator('[data-github-id="150"]').isChecked(), false);
-  assert.match(await page.locator('#github-error').textContent(), /up to 50/);
+  await page.locator('#github-select-all').click();
+  assert.equal(await page.locator('[data-github-id]:checked').count(), 500);
+  assert.match(await page.locator('#github-count').textContent(), /500 selected/);
+  await page.locator('#github-clear-selection').click();
+  assert.equal(await page.locator('[data-github-id]:checked').count(), 0);
+  assert.equal(await page.locator('#github-import').isDisabled(), true);
   assert.equal(await page.locator('#github-dialog').evaluate(node => node.scrollHeight > node.clientHeight), true, 'dialog can scroll on mobile');
   assert.equal(await page.locator('#github-repositories').evaluate(node => node.scrollHeight > node.clientHeight), true, '500-row list has its own scroll region');
-  for (const id of ['github-import', 'github-close']) {
+  assert.equal(await page.locator('#github-dialog').evaluate(node => node.scrollWidth <= node.clientWidth), true, 'bulk controls fit mobile dialog');
+  await page.locator('#github-select-all').click();
+  for (const id of ['github-select-all', 'github-clear-selection', 'github-import', 'github-close']) {
     await page.locator('#' + id).scrollIntoViewIfNeeded();
     const box = await page.locator('#' + id).boundingBox();
     assert.ok(box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 844, id + ' reachable within viewport');
-    await page.locator('#' + id).focus();
-    assert.equal(await page.locator('#' + id).evaluate(node => node === document.activeElement), true);
+    if (await page.locator('#' + id).isEnabled()) {
+      await page.locator('#' + id).focus();
+      assert.equal(await page.locator('#' + id).evaluate(node => node === document.activeElement), true);
+    }
   }
   await page.locator('#github-close').click();
 });
@@ -323,6 +328,162 @@ test('an import failure preserves choices and a late import cannot reset a reope
   assert.equal(await page.locator('#github-search').inputValue(), 'beta');
   assert.equal(await page.locator('[data-github-id="12"]').isChecked(), true);
   assert.doesNotMatch(await page.locator('#github-results').textContent(), /1 added/);
+});
+
+test('first connected status refreshes the overview immediately without reloading the page', async t => {
+  for (const initialStatus of ['connected', 'pending']) {
+    let snapshots = 0;
+    const {page, state} = await fixture(t, {auth: auth(initialStatus), snapshot: route => {
+      snapshots++;
+      const next = JSON.parse(fs.readFileSync(path.join(__dirname, 'demo.json'), 'utf8'));
+      Object.assign(next, {live: true, repository_management: true, github_session_id: 'fixture-session-a', github_generation: 1});
+      next.repositories[0].name = 'Immediately refreshed overview';
+      return route.fulfill({json: next});
+    }});
+    let navigations = 0;
+    page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations++; });
+    await open(page);
+    if (initialStatus === 'pending') {
+      await page.locator('#github-pending').waitFor({state: 'visible'});
+      state.auth = auth('connected');
+      await page.clock.fastForward(2000);
+    }
+    await until(async () => /Immediately refreshed overview/.test(await page.locator('#repository-table').textContent()), initialStatus + ' immediately updates overview');
+    assert.equal(snapshots, 1, 'one snapshot on first connection');
+    assert.equal(navigations, 0, 'no page reload required');
+    await page.locator('#github-close').click();
+  }
+});
+
+test('an import during an in-flight snapshot queues exactly one fresh follow-up', async t => {
+  let pending, snapshots = 0;
+  const {page, data} = await fixture(t, {auth: auth('connected'), snapshot: (route, state, data) => {
+    snapshots++;
+    if (snapshots === 1) { pending = {route, data: structuredClone(data)}; return; }
+    return route.fulfill({json: data});
+  }, handlers: {import: route => {
+    data.repositories[0].name = 'Imported overview arrives without reload';
+    return route.fulfill({json: {imported: [{id: 11}], already_configured: [], failed: []}});
+  }}});
+  await open(page);
+  await until(() => Boolean(pending), 'first connection snapshot is in flight');
+  await page.locator('[data-github-id="11"]').check();
+  await page.locator('#github-import').click();
+  await until(async () => /1 added/.test(await page.locator('#github-results').textContent()), 'import finished while snapshot held');
+  assert.equal(snapshots, 1, 'snapshot requests do not overlap');
+  await pending.route.fulfill({json: pending.data});
+  await until(async () => /Imported overview arrives without reload/.test(await page.locator('#repository-table').textContent()), 'queued refresh replaces obsolete snapshot');
+  assert.equal(snapshots, 2, 'one follow-up drains immediately without polling');
+});
+
+test('bulk selection respects search, configured account identity and duplicate discovery rows', async t => {
+  const {page, state} = await fixture(t, {auth: auth('connected'), configureData: data => {
+    Object.assign(data.repositories[0], {source_kind: 'github', github_repository_id: 11, github_account_id: 17});
+    Object.assign(data.repositories[1], {source_kind: 'github', github_repository_id: 12, github_account_id: 99});
+  }});
+  state.repositories.push({...repositories[1]});
+  await open(page);
+  await page.locator('[data-github-id="12"]').waitFor();
+  assert.equal(await page.locator('[data-github-id="12"]').count(), 1, 'duplicate discovered IDs rendered once');
+  // Configured entries may remain as disabled context, but cannot be selected again.
+  const configured = page.locator('[data-github-id="11"]');
+  assert.ok(await configured.count() === 0 || await configured.isDisabled(), 'same-account configured choice excluded');
+  await page.locator('#github-search').fill('BETA');
+  await page.locator('#github-select-all').click();
+  assert.equal(await page.locator('[data-github-id="12"]').isChecked(), true, 'other account does not suppress choice');
+  await page.locator('#github-search').fill('gamma');
+  assert.equal(await page.locator('[data-github-id="13"]').isChecked(), false, 'hidden choices were not selected');
+  await page.locator('#github-select-all').click();
+  await page.locator('#github-search').fill('');
+  assert.equal(await page.locator('[data-github-id]:checked').count(), 2, 'prior hidden selection retained');
+  await page.locator('#github-search').fill('beta');
+  await page.locator('#github-clear-selection').click();
+  await page.locator('#github-search').fill('');
+  assert.equal(await page.locator('[data-github-id]:checked').count(), 0, 'clear selection clears hidden choices too');
+});
+
+test('bulk imports run sequential batches of at most 50 and retain only failed choices', async t => {
+  const pending = [], batches = [];
+  const {page, state} = await fixture(t, {auth: auth('connected'), handlers: {import: route => {
+    batches.push(route.request().postDataJSON().repository_ids); pending.push(route);
+  }}});
+  state.repositories = Array.from({length: 125}, (_, i) => ({id: i + 100, full_name: 'fixture/bulk-' + i}));
+  await open(page);
+  await until(async () => await page.locator('[data-github-id]').count() === 125, 'bulk choices available');
+  await page.locator('#github-select-all').click();
+  await page.locator('#github-import').click();
+  await until(() => batches.length === 1, 'first batch starts');
+  for (const control of ['github-import', 'github-select-all', 'github-clear-selection', 'github-search']) {
+    assert.equal(await page.locator('#' + control).isDisabled(), true, control + ' disabled while adding');
+  }
+  assert.equal(batches[0].length, 50);
+  // Unknown, future-batch and repeated IDs cannot inflate counts or clear unrelated choices.
+  await pending[0].fulfill({json: {imported: [...batches[0].slice(1).map(id => ({id})), {id: 99999}, {id: 224}, {id: 101}], already_configured: [], failed: [{id: 100, message: 'Retry this repository.'}]}});
+  await until(() => batches.length === 2, 'second batch starts after first response');
+  assert.equal(batches[1].length, 50);
+  await pending[1].fulfill({json: {imported: batches[1].slice(1).map(id => ({id})), already_configured: [{id: batches[1][0]}], failed: []}});
+  await until(() => batches.length === 3, 'last batch starts after second response');
+  assert.equal(batches[2].length, 25);
+  assert.ok(batches[2].includes(224), 'future-batch ID was not accepted early');
+  await pending[2].fulfill({json: {imported: batches[2].map(id => ({id})), already_configured: [], failed: []}});
+  await until(() => page.locator('#github-import').isEnabled(), 'batch operation finished');
+  assert.match(await page.locator('#github-results').textContent(), /123 added.*1 already configured.*1 failed/s);
+  assert.match(await page.locator('#github-results').textContent(), /Retry this repository/);
+  assert.equal(await page.locator('[data-github-id]:checked').count(), 1);
+  assert.equal(await page.locator('[data-github-id="100"]').isChecked(), true);
+  assert.equal(new Set(batches.flat()).size, 125, 'each selected ID sent once');
+});
+
+test('closing or changing account stops subsequent import batches', async t => {
+  for (const reason of ['close', 'account']) {
+    let pending;
+    const batches = [];
+    const {page, state} = await fixture(t, {auth: auth('connected'), handlers: {import: route => {
+      batches.push(route.request().postDataJSON().repository_ids); pending = route;
+    }}});
+    state.repositories = Array.from({length: 51}, (_, i) => ({id: i + 100, full_name: 'fixture/stop-' + i}));
+    await open(page);
+    await until(async () => await page.locator('[data-github-id]').count() === 51, 'choices loaded');
+    await page.locator('#github-select-all').click();
+    await page.locator('#github-import').click();
+    await until(() => Boolean(pending), 'first batch pending');
+    if (reason === 'close') {
+      await page.locator('#github-close').click();
+      await pending.fulfill({json: {imported: batches[0].map(id => ({id})), already_configured: [], failed: []}}).catch(() => {});
+      await open(page);
+      await page.locator('[data-github-id="100"]').waitFor();
+    } else {
+      state.auth = auth('connected', {generation: 2, user: {id: 18, login: 'changed-fixture'}});
+      await pending.fulfill({json: {github_session_id: 'fixture-session-a', github_generation: 2, imported: batches[0].map(id => ({id})), already_configured: [], failed: []}});
+      await until(async () => /changed-fixture/.test(await page.locator('#github-account').textContent()), 'new account reconciled');
+    }
+    assert.equal(batches.length, 1, reason + ' prevents later batches');
+    assert.equal(await page.locator('[data-github-id]:checked').count(), 0, 'old selections cleared');
+    assert.doesNotMatch(await page.locator('#github-results').textContent(), /50 added/, 'late result is not displayed in new context');
+  }
+});
+
+test('a later batch error preserves confirmed progress and leaves unsent choices available', async t => {
+  const batches = [];
+  const {page, state} = await fixture(t, {auth: auth('connected'), handlers: {import: route => {
+    const ids = route.request().postDataJSON().repository_ids;
+    batches.push(ids);
+    return batches.length === 1
+      ? route.fulfill({json: {imported: ids.map(id => ({id})), already_configured: [], failed: []}})
+      : route.fulfill({status: 503, json: {error: {code: 'provider_unavailable', message: 'Provider temporarily unavailable.'}}});
+  }}});
+  state.repositories = Array.from({length: 125}, (_, i) => ({id: i + 100, full_name: 'fixture/retry-' + i}));
+  await open(page);
+  await until(async () => await page.locator('[data-github-id]').count() === 125, 'choices available');
+  await page.locator('#github-select-all').click();
+  await page.locator('#github-import').click();
+  await until(async () => /Provider temporarily unavailable/.test(await page.locator('#github-error').textContent()), 'later failure displayed');
+  assert.equal(batches.length, 2, 'provider failure stops remaining requests');
+  assert.match(await page.locator('#github-results').textContent(), /50 added/);
+  assert.equal(await page.locator('[data-github-id]:checked').count(), 75, 'unconfirmed and unsent choices retained');
+  assert.equal(await page.locator('[data-github-id="224"]').isChecked(), true);
+  assert.equal(await page.locator('[data-github-id="100"]').isChecked(), false);
+  assert.equal(await page.locator('#github-import').isEnabled(), true, 'retry remains available');
 });
 
 test('optional axe checks cover setup, sign-in, pending code and expired states', {skip: !axe && 'Optional axe-core is not installed'}, async t => {
