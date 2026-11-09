@@ -14,6 +14,12 @@ separate choice because staged edits can differ from both HEAD and the current
 working file. Targets are locally available branch refs; remote-tracking refs
 are cached local information. Inspection does not contact a remote server.
 
+Choosing a source or target updates the comparison automatically. Switching
+repositories preserves compatible choices and updates the comparison when both
+are available; otherwise choose the missing source or target. Rapid changes are
+debounced and a busy previous scan is retried briefly. **Inspect changes** reruns
+the current comparison. Ordinary snapshot polling does not rerun inspections.
+
 ## Interpret the evidence
 
 **Present** describes matched content, not tested behavior, a merged PR, a

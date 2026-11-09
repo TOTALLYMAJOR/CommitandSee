@@ -1,7 +1,14 @@
 # Release notes
 
-## Unreleased - local change insights (0.5.0-rc.1 candidate)
+## Unreleased - local change insights (0.5.0-rc.2 candidate)
 
+- Update comparisons when repository, source, or target selections change;
+  preserve compatible choices and recover automatically from a busy prior scan.
+  Refresh the overview after GitHub connection and coalesce refreshes that
+  arrive while another request is running.
+- Select all shown GitHub repositories or clear the selection. Search limits
+  the bulk-selection scope, already-added repositories are excluded, and large
+  additions use sequential batches with partial failures left selected for retry.
 - Inspect a local branch, stash, working files, or staged files against a chosen
   local or cached remote branch. Compare captured changes with target contents
   and show present, remaining, partly present, or uncertain evidence per file.

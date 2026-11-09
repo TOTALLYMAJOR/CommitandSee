@@ -560,3 +560,47 @@ so the nominal 18-second budget is not a strict real-time guarantee. Privileged
 Windows symlink/reparse races were not independently exercised; those platform
 fixtures remain skipped. Clean-machine compatibility, signing, SmartScreen,
 full accessibility, and real private GitHub PR lookup remain unqualified.
+
+## Selection refresh and bulk repository picker - 0.5.0-rc.2 (2026-11-09)
+
+Independent Chromium reproduction confirmed that source/target changes cleared
+results without requesting a replacement, and a busy previous scan left the
+repository picker stuck after HTTP 429. Main overview filtering itself rendered
+immediately. GitHub connection also cleared old observations without requesting
+an immediate snapshot. These paths now update automatically, coalesce concurrent
+refresh requests, retain compatible comparison choices, and retry a busy scanner
+within a bounded interval. Normal snapshot polling still does not run inspections.
+
+The GitHub picker adds Select all shown and Clear selection. Bulk selection
+respects search, ignores duplicate discovery rows and already-added repositories
+for the current account, and sends sequential batches of at most 50 IDs. It
+accepts only response IDs from the current batch, retains failed or unconfirmed
+choices for retry, and stops further batches on dialog closure or account change.
+
+Final combined Chromium run: **60 cases, 58 passes, 2 optional axe-core skips,
+zero failures**, in 84.948 seconds. Regression cases cover immediate initial
+connection refresh, refresh requests arriving during a snapshot fetch, automatic
+source/target/repository updates, debounce, busy retry/cancellation, account and
+late-response boundaries, filtered selection, 125-repository batches, partial
+failure, interrupted imports, and 500-row mobile controls. Independent review
+passed 35 browser cases plus two final overview-switching checks. The focused
+Python dashboard, repository UI, and portable-launcher suites passed **30 tests**
+in 2.597 seconds. The comparison engine and backend are unchanged from rc.1's
+full Windows/WSL qualification above.
+
+Desktop 1440px and mobile 390px GitHub picker captures were inspected. The actual
+extracted rc.2 executable also passed automatic target/source changes against a
+disposable Git repository without page reload or Inspect button clicks. Partial
+adoption, remaining changes, staged/working separation, and saved-version labels
+were checked. No browser page/console errors or horizontal mobile overflow were
+observed, and repository plus Git metadata bytes remained unchanged.
+
+Artifact: `CommitandSee-0.5.0-rc.2-Windows-x64-892404344e29.zip`, **11,264,695 bytes**,
+SHA-256 `c6a685c3a77ba70602f864d12ecb20bfb6d9ec441f519c3212962c5c4069cb49`.
+All 22 source inputs matched the checkout and all 685 ZIP entries passed CRC
+checks; the private-state path check found no configuration, observation, Git,
+or SQLite entries. The native portable smoke test with `--github-checks` passed
+onboarding, persistence, bundled settings/guide, and shutdown checks with Python
+absent from the child PATH. GitHub behavior uses controlled provider fixtures;
+this follow-up did not authorize a real GitHub account or import user repositories.
+The build remains an unsigned local candidate, not a published release.

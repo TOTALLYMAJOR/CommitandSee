@@ -46,7 +46,7 @@ async function fixture(t,options={}){
   await page.goto(origin);return {page,data,calls};
 }
 async function choose(page){await page.selectOption('#insights-repository','local-0');await page.locator('#insights-source option[value="branch:topic"]').waitFor({state:'attached'});await page.selectOption('#insights-source','branch:topic');}
-async function scan(page){await choose(page);await page.locator('#insights-scan').click();await page.locator('#insights-results .insights-file').first().waitFor();}
+async function scan(page){await choose(page);await page.clock.fastForward(200);await page.locator('#insights-results .insights-file').first().waitFor();}
 
 test('mixed local insights display evidence, scope and exact saved-version limits',async t=>{
   const {page,calls}=await fixture(t);assert.equal(calls.length,0,'no automatic inspection');
@@ -67,11 +67,61 @@ test('static reports, demo data and remote-only selections explain local require
   }
 });
 
-test('changing source or target clears prior results without rescanning',async t=>{
+test('changing source or target updates the comparison without a page reload',async t=>{
   const {page,calls}=await fixture(t);await scan(page);
   await page.selectOption('#insights-source','index:a');assert.equal(await page.locator('#insights-results').textContent(),'');assert.equal(calls.length,2);
-  await page.locator('#insights-scan').click();await page.locator('#insights-results .insights-file').first().waitFor();
+  await page.clock.fastForward(200);await page.locator('#insights-results .insights-file').first().waitFor();
+  assert.equal(calls.at(-1).body.source,'index:a');
   await page.selectOption('#insights-target','refs/remotes/origin/main');assert.equal(await page.locator('#insights-results').textContent(),'');assert.equal(calls.length,3);
+  await page.clock.fastForward(200);await page.locator('#insights-results .insights-file').first().waitFor();
+  assert.equal(calls.at(-1).body.target,'refs/remotes/origin/main');assert.equal(calls.length,4);
+});
+
+test('switching local repository keeps compatible choices and automatically updates evidence',async t=>{
+  const {page,calls}=await fixture(t);await scan(page);
+  await page.selectOption('#insights-repository','local-1');
+  await page.waitForFunction(()=>document.querySelector('#insights-status').textContent==='Updating comparison…');
+  await page.clock.fastForward(200);await page.locator('#insights-results .insights-file').first().waitFor();
+  assert.deepEqual(calls.at(-1).body,{repository:'local-1',source:'branch:topic',target:'refs/heads/main'});
+});
+
+test('overview repository filter loads matching inspection choices without reloading the page',async t=>{
+  const {page,data,calls}=await fixture(t);
+  await page.selectOption('#repo-select',data.repositories[1].path);
+  await page.locator('#insights-source option[value="branch:topic"]').waitFor({state:'attached'});
+  assert.equal(await page.locator('#insights-repository').inputValue(),'local-1');
+  assert.deepEqual(calls.map(call=>call.body),[{repository:'local-1'}]);
+  assert.match(await page.locator('#selection-note').textContent(),/^1 repository selected/);
+});
+
+test('overview repository switching preserves compatible comparison choices',async t=>{
+  const {page,data,calls}=await fixture(t);await scan(page);
+  await page.selectOption('#repo-select',data.repositories[1].path);
+  await page.waitForFunction(()=>document.querySelector('#insights-status').textContent==='Updating comparison…');
+  await page.clock.fastForward(200);await page.locator('#insights-results .insights-file').first().waitFor();
+  assert.deepEqual(calls.at(-1).body,{repository:'local-1',source:'branch:topic',target:'refs/heads/main'});
+});
+
+test('busy previous inspection retries choices and stops retrying when selection changes',async t=>{
+  let blocked=0;
+  const {page,calls}=await fixture(t,{options:(route,body)=>body.repository==='local-0'&&++blocked<3?
+    route.fulfill({status:429,json:{error:{code:'scan_busy',message:'Another local inspection is running.'}}}):route.fulfill({json:choices})});
+  const first=page.waitForResponse(response=>response.status()===429);await page.selectOption('#insights-repository','local-0');await first;
+  const second=page.waitForResponse(response=>response.status()===429);await page.clock.fastForward(2000);await second;
+  await page.clock.fastForward(2000);await page.locator('#insights-source option[value="branch:topic"]').waitFor({state:'attached'});
+  assert.equal(blocked,3);
+  blocked=0;const response=page.waitForResponse(response=>response.status()===429);
+  await page.locator('#insights-reload').click();await response;
+  await page.selectOption('#insights-repository','local-1');await page.locator('#insights-source option[value="branch:topic"]').waitFor({state:'attached'});
+  const count=calls.length;await page.clock.fastForward(10000);assert.equal(calls.length,count,'aborted retry cannot issue another old request');
+});
+
+test('rapid target changes debounce to the latest comparison',async t=>{
+  const {page,calls}=await fixture(t);await scan(page);
+  await page.selectOption('#insights-target','refs/remotes/origin/main');
+  await page.selectOption('#insights-target','refs/heads/main');
+  await page.clock.fastForward(200);await page.locator('#insights-results .insights-file').first().waitFor();
+  assert.equal(calls.length,3);assert.equal(calls.at(-1).body.target,'refs/heads/main');
 });
 
 test('late options cannot replace choices for a newer repository selection',async t=>{
@@ -85,7 +135,7 @@ test('late options cannot replace choices for a newer repository selection',asyn
 test('late scan cannot restore evidence after changing the source',async t=>{
   const gate=deferred(),arrived=deferred();
   const {page}=await fixture(t,{scan:async route=>{arrived.resolve();await gate.promise;return route.fulfill({json:report}).catch(()=>{});}});
-  await choose(page);await page.locator('#insights-scan').click();await arrived.promise;
+  await choose(page);await page.clock.fastForward(200);await arrived.promise;
   await page.selectOption('#insights-source','stash:a');gate.resolve();await page.waitForTimeout(30);
   assert.equal(await page.locator('#insights-results').textContent(),'');assert.equal(await page.locator('#insights-source').inputValue(),'stash:a');assert.equal(await page.locator('#insights-scan').isEnabled(),true);
 });
@@ -93,7 +143,7 @@ test('late scan cannot restore evidence after changing the source',async t=>{
 test('removed repository invalidates a pending scan and its evidence',async t=>{
   const gate=deferred(),arrived=deferred();
   const {page,data}=await fixture(t,{scan:async route=>{arrived.resolve();await gate.promise;return route.fulfill({json:report}).catch(()=>{});}});
-  await choose(page);await page.locator('#insights-scan').click();await arrived.promise;
+  await choose(page);await page.clock.fastForward(200);await arrived.promise;
   data.repositories=data.repositories.slice(1);await page.locator('#refresh-button').click();await page.waitForFunction(()=>!document.querySelector('#insights-repository option[value="local-0"]'));
   gate.resolve();await page.waitForTimeout(30);assert.equal(await page.locator('#insights-results').textContent(),'');assert.equal(await page.locator('#insights-repository').inputValue(),'');
 });
@@ -113,7 +163,7 @@ test('same repository id with a changed local identity invalidates old results',
 test('busy scan disables duplicate submission and reports a backend limit error',async t=>{
   const gate=deferred(),arrived=deferred();
   const {page,calls}=await fixture(t,{scan:async route=>{arrived.resolve();await gate.promise;return route.fulfill({status:503,json:{error:{code:'busy',message:'Another local inspection is running. Try again shortly.'}}});}});
-  await choose(page);await page.locator('#insights-scan').click();await arrived.promise;
+  await choose(page);await page.clock.fastForward(200);await arrived.promise;
   assert.equal(await page.locator('#insights-scan').isDisabled(),true);await page.locator('#insights-scan').evaluate(node=>node.click());assert.equal(calls.length,2);
   gate.resolve();await page.waitForFunction(()=>document.getElementById('insights-error').textContent.includes('Another local inspection'));
   assert.equal(await page.locator('#insights-results').textContent(),'');assert.equal(await page.locator('#insights-scan').isEnabled(),true);

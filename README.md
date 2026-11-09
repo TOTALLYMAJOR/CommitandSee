@@ -249,6 +249,12 @@ registration.
    **Add selected**. Only selected repositories are saved and queued for history
    collection; signing in does not add every accessible repository.
 
+Source builds also offer **Select all shown** (respecting your search and skipping
+already-added repositories) and **Clear selection**. Large selections are added
+in batches; failed or unconfirmed repositories stay selected for retry. Closing
+the dialog stops further batches; a request already sent may still complete.
+GitHub connection and import changes refresh the overview without a page reload.
+
 The app requests read-only repository access. A repository must be available to
 both your account and the app installation. An empty list or pending organization
 request does not grant access. Local checkouts and manual public URLs remain

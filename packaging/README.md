@@ -5,8 +5,9 @@ the ZIP and open `CommitandSee.exe`; they still need Git for Windows. The launch
 uses `%LOCALAPPDATA%\CommitandSee`, starts on an available loopback port, checks HTTP
 readiness, and then opens the default browser. It leaves the source CLI unchanged.
 
-The current recipe builds **0.5.0-rc.1**, adding on-demand local change and saved-version
-inspections. The prior 0.4.0-rc.1 build includes chart drill-down, finer time
+The current recipe builds **0.5.0-rc.2**, adding local change and saved-version
+inspections, automatic selection updates, and bulk GitHub repository selection.
+The prior 0.4.0-rc.1 build includes chart drill-down, finer time
 buckets, PR grouping, range zoom, and equal-duration comparisons.
 The older 0.2.0-rc.1 ZIP and tag are
 separate artifacts without GitHub sign-in; updating this recipe does not replace
