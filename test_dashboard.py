@@ -2,7 +2,9 @@
 import argparse
 import copy
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -11,6 +13,71 @@ from http.server import ThreadingHTTPServer
 from unittest.mock import Mock, patch
 
 import git_dashboard as dashboard
+
+
+class WorktreeDiffTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(dir=Path.cwd())
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = Path(self.tmp.name) / 'repository'
+        self.repo.mkdir()
+        self.env_patch = patch.dict(os.environ, {'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': os.devnull,
+            'GIT_TERMINAL_PROMPT': '0', 'GIT_AUTHOR_NAME': 'Test User',
+            'GIT_AUTHOR_EMAIL': 'test@example.invalid', 'GIT_COMMITTER_NAME': 'Test User',
+            'GIT_COMMITTER_EMAIL': 'test@example.invalid'})
+        self.env_patch.start()
+        self.addCleanup(self.env_patch.stop)
+        self.git('init', '-b', 'main', '.')
+        (self.repo / 'app.py').write_text('original\n', encoding='utf-8')
+        self.git('add', 'app.py')
+        self.git('commit', '-m', 'baseline')
+        (self.repo / 'app.py').write_text('staged\n', encoding='utf-8')
+        self.git('add', 'app.py')
+        (self.repo / 'app.py').write_text('staged\nunstaged\n', encoding='utf-8')
+        (self.repo / 'new.txt').write_text('first\nsecond\n', encoding='utf-8')
+        config = dict(dashboard.DEFAULTS, repositories=[{'path': str(self.repo), 'name': 'fixture',
+            'product': 'tests', 'ref': 'HEAD', 'exclude_globs': []}])
+        self.collector = dashboard.DashboardCollector(config)
+        self.state = dashboard.LiveState(self.collector)
+        self.addCleanup(self.state.auth.close)
+        self.state.publish(self.collector.collect())
+        self.row = self.state.read()['repositories'][0]
+        self.worktree = self.row['worktrees'][0]
+
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.repo), *args], check=True,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def body(self, layer, path):
+        return {'repository': self.row['id'], 'worktree': self.worktree['path'], 'layer': layer,
+                'path': path, 'fingerprint': self.worktree['fingerprint']}
+
+    def test_staged_unstaged_and_untracked_diffs_are_separate_and_bounded(self):
+        staged = self.state.worktree_diff(self.body('staged', 'app.py'))
+        unstaged = self.state.worktree_diff(self.body('unstaged', 'app.py'))
+        untracked = self.state.worktree_diff(self.body('untracked', 'new.txt'))
+        self.assertIn('+staged', staged['diff'])
+        self.assertNotIn('+unstaged', staged['diff'])
+        self.assertIn('+unstaged', unstaged['diff'])
+        self.assertIn('+++ "b/new.txt"', untracked['diff'])
+        self.assertEqual((untracked['additions'], untracked['deletions']), (2, 0))
+        self.assertFalse(untracked['binary'])
+        self.assertNotIn(staged['diff'], json.dumps(self.state.read()), 'diff content is not exported')
+
+    def test_unobserved_layers_paths_and_stale_fingerprints_are_rejected(self):
+        invalid = [self.body('staged', 'new.txt'), self.body('untracked', 'app.py'),
+                   dict(self.body('staged', 'app.py'), path='../outside'),
+                   dict(self.body('staged', 'app.py'), fingerprint='stale'),
+                   dict(self.body('staged', 'app.py'), layer='combined')]
+        for body in invalid:
+            with self.subTest(body=body), self.assertRaises(dashboard.RepositoryError):
+                self.state.worktree_diff(body)
+
+    def test_changed_file_is_rejected_until_snapshot_refreshes(self):
+        (self.repo / 'app.py').write_text('changed after observation\n', encoding='utf-8')
+        with self.assertRaises(dashboard.RepositoryError) as error:
+            self.state.worktree_diff(self.body('unstaged', 'app.py'))
+        self.assertEqual(error.exception.code, 'stale_diff')
 
 
 class CommitPullTests(unittest.TestCase):

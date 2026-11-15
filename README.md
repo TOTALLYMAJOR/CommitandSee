@@ -82,8 +82,10 @@ remain visible; upstream comparisons use locally cached Git information.*
 | What might not be merged? | Git ancestry against your selected comparison ref |
 | How complete is this picture? | Observation times, pending sources, failures, and partial history |
 
-Filter by repository, product, and history window. Expand a worktree's changed
-paths to investigate it in your editor. **Export JSON** saves the complete current
+Filter by repository, product, and history window. Expand a worktree for separate
+**Staged**, **Unstaged**, and **Untracked** views, then expand a file to read its
+bounded diff. Diff content loads only on request in the live local dashboard; it
+is not added to exported snapshots. **Export JSON** saves the complete current
 snapshot, including repositories outside the active filters. Review it for private
 project information before sharing.
 
@@ -410,6 +412,8 @@ GitHub rate limits produce partial results or explicit errors.
 - **Working changes** compare HEAD to the working tree. Staged and unstaged
   comparisons are separate; adding them can double-count or cancel changes.
   Untracked paths are listed without counting their contents as tracked churn.
+  File diffs are limited to 512 KiB and 4,000 displayed lines; binary content is
+  identified but not rendered. A changed fingerprint requires a fresh snapshot.
 - **Ahead/behind** uses locally cached upstream refs. Local-checkout observation
   does not fetch; missing upstreams remain unknown publication status.
 - **Unmerged candidates** use Git ancestry. Squash/rebase merges and reused

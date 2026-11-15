@@ -20,7 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from git_metrics import collect_repository, GitError, _Git, _git_capabilities
+from git_metrics import collect_repository, GitError, _Git, _git_capabilities, _worktree
 from public_repositories import public_url, public_metadata, collect_public
 from repository_registry import RepositoryRegistry, validate_state_destination
 from github_auth import API_ROOT, GitHubAuth, GitHubAuthError, _request_json, github_app_config
@@ -35,6 +35,8 @@ DEFAULTS = {
 }
 GITHUB_SOURCE_FIELDS = {"source_kind", "url", "path", "name", "product", "ref", "exclude_globs",
                         "github_repository_id", "github_account_id", "installation_id", "private"}
+DIFF_OUTPUT_LIMIT = 512 * 1024
+DIFF_LINE_LIMIT = 4000
 
 
 def utc_now():
@@ -436,6 +438,7 @@ class LiveState:
         self.lock = threading.Lock()
         self.write_lock = threading.Lock()
         self.insights_lock = threading.Lock()
+        self.diff_slots = threading.BoundedSemaphore(2)
         self.stop = threading.Event()
         self.wake = threading.Event()
         self.snapshot = {"schema_version": 1, "title": collector.config["title"],
@@ -595,6 +598,121 @@ class LiveState:
                 return result
         finally:
             self.insights_lock.release()
+
+    def worktree_diff(self, body):
+        """Return one bounded, current diff for an observed local-worktree file."""
+        required = {"repository", "worktree", "layer", "path", "fingerprint"}
+        if (not isinstance(body, dict) or set(body) != required
+                or any(not isinstance(value, str) or not value or len(value) > 4096
+                       or "\0" in value for value in body.values())
+                or body["layer"] not in {"staged", "unstaged", "untracked"}):
+            raise RepositoryError("invalid_input", "Choose an observed worktree file and change layer.")
+        if not self.diff_slots.acquire(blocking=False):
+            raise RepositoryError("diff_busy", "Two file diffs are already loading. Try again shortly.", 429)
+        try:
+            with self.lock:
+                revision = self.registry_revision
+                repo = next((copy.deepcopy(row) for row in self.snapshot["repositories"]
+                             if row.get("id") == body["repository"]), None)
+                entries = [item for item in self.collector.config["repositories"]
+                           if not item.get("url") and item.get("source_kind", "local") == "local"]
+                active = {item["path"] for item in entries}
+                if (not repo or repo.get("url") or repo.get("source_kind", "local") != "local"
+                        or not active.intersection(repo.get("configured_paths", [repo.get("path")]))
+                        or not repo.get("common_dir") or repo.get("status") == "pending"):
+                    raise RepositoryError("not_local", "Choose an observed, registered local checkout.", 404)
+                worktree = next((copy.deepcopy(row) for row in repo.get("worktrees", [])
+                                 if row.get("path") == body["worktree"]), None)
+                if not worktree or worktree.get("fingerprint") != body["fingerprint"]:
+                    raise RepositoryError("stale_diff", "Working-tree observation changed. Refresh and try again.", 409)
+                observed = next((item for item in worktree.get("files", [])
+                                 if item.get("path") == body["path"] and self._file_in_layer(item, body["layer"])), None)
+                if not observed:
+                    raise RepositoryError("not_observed", "That file is not present in the selected change layer.", 404)
+                identity = (repo["id"], repo["path"], repo["common_dir"])
+
+            root = Path(body["worktree"]).resolve()
+            _, no_lazy_fetch = _git_capabilities()
+            git = _Git(root, no_lazy_fetch)
+            before = _worktree(git, {}, ())
+            if before.get("fingerprint") != body["fingerprint"]:
+                raise RepositoryError("stale_diff", "Working-tree files changed after the last observation. Refresh and try again.", 409)
+            if body["layer"] == "untracked":
+                result = self._untracked_diff(root, body["path"])
+            else:
+                command = ["diff"]
+                if body["layer"] == "staged":
+                    command.append("--cached")
+                command.extend(("--unified=3", "--no-ext-diff", "--no-textconv",
+                                "--ignore-submodules=dirty", "--submodule=short", "--", body["path"]))
+                try:
+                    raw = git.run(*command, limit=DIFF_OUTPUT_LIMIT)
+                except GitError as exc:
+                    if "exceeded the collection budget" in str(exc):
+                        raise RepositoryError("diff_too_large", "This file diff exceeds the 512 KiB display limit.", 413) from None
+                    raise RepositoryError("diff_unavailable", "Git could not read this file diff.", 503) from None
+                result = self._format_diff(raw)
+            after = _worktree(git, {}, ())
+            if after.get("fingerprint") != body["fingerprint"]:
+                raise RepositoryError("stale_diff", "Working-tree files changed while the diff was loading. Refresh and try again.", 409)
+            with self.lock:
+                current = next((row for row in self.snapshot["repositories"]
+                                if (row.get("id"), row.get("path"), row.get("common_dir")) == identity), None)
+                current_tree = next((row for row in (current or {}).get("worktrees", [])
+                                     if row.get("path") == body["worktree"]), None)
+                if (self.stop.is_set() or revision != self.registry_revision or not current_tree
+                        or current_tree.get("fingerprint") != body["fingerprint"]):
+                    raise RepositoryError("stale_diff", "Repository selection changed. Refresh and try again.", 409)
+            return {"path": body["path"], "layer": body["layer"], **result}
+        finally:
+            self.diff_slots.release()
+
+    @staticmethod
+    def _file_in_layer(item, layer):
+        if layer == "untracked":
+            return item.get("kind") == "untracked"
+        if item.get("kind") == "untracked":
+            return False
+        if layer == "staged":
+            return item.get("kind") != "conflict" and item.get("index") not in {None, ".", "?"}
+        return item.get("kind") == "conflict" or item.get("worktree") not in {None, ".", "?"}
+
+    @staticmethod
+    def _format_diff(raw):
+        text = raw.decode("utf-8", "replace")
+        lines = text.splitlines()
+        truncated = len(lines) > DIFF_LINE_LIMIT
+        shown = lines[:DIFF_LINE_LIMIT]
+        additions = sum(line.startswith("+") and not line.startswith("+++") for line in shown)
+        deletions = sum(line.startswith("-") and not line.startswith("---") for line in shown)
+        return {"diff": "\n".join(shown), "binary": any("Binary files " in line for line in shown),
+                "truncated": truncated, "additions": additions, "deletions": deletions}
+
+    @staticmethod
+    def _untracked_diff(root, relative):
+        target = root / relative
+        try:
+            resolved = target.resolve(strict=True)
+            resolved.relative_to(root)
+            if target.is_symlink() or not target.is_file():
+                raise OSError
+            with target.open("rb") as stream:
+                raw = stream.read(DIFF_OUTPUT_LIMIT + 1)
+        except (OSError, ValueError):
+            raise RepositoryError("diff_unavailable", "This untracked path is not a readable regular file.", 404) from None
+        if len(raw) > DIFF_OUTPUT_LIMIT:
+            raise RepositoryError("diff_too_large", "This untracked file exceeds the 512 KiB display limit.", 413)
+        if b"\0" in raw:
+            return {"diff": "", "binary": True, "truncated": False, "additions": None, "deletions": None}
+        text = raw.decode("utf-8", "replace")
+        lines = text.splitlines()
+        truncated = len(lines) > DIFF_LINE_LIMIT
+        shown = lines[:DIFF_LINE_LIMIT]
+        label = json.dumps("b/" + relative.replace("\\", "/"), ensure_ascii=False)
+        diff = ["--- /dev/null", "+++ " + label, f"@@ -0,0 +1,{len(lines)} @@"]
+        diff.extend("+" + line for line in shown)
+        return {"diff": "\n".join(diff), "binary": False, "truncated": truncated,
+                "additions": len(shown), "deletions": 0}
 
     def commit_pulls(self, body):
         if (not isinstance(body, dict) or set(body) != {"repository", "sha"}
@@ -942,7 +1060,8 @@ def make_handler(state):
             github_actions = {"/api/github/" + action: action for action in ("start", "cancel", "disconnect")}
             if self.path not in {"/api/repositories", "/api/repositories/remove",
                                  "/api/github/repositories", "/api/github/import", "/api/commit-pulls",
-                                 "/api/local-insights", "/api/local-insights/options", *github_actions}:
+                                 "/api/local-insights", "/api/local-insights/options", "/api/worktree-diff",
+                                 *github_actions}:
                 self.json_response({"error": {"code": "not_found", "message": "Unknown endpoint."}}, 404)
                 return
             try:
@@ -953,6 +1072,8 @@ def make_handler(state):
                 body = json.loads(self.rfile.read(length))
                 if self.path in {"/api/local-insights", "/api/local-insights/options"}:
                     result, status = state.inspect_local_changes(body, inventory=self.path.endswith("/options")), 200
+                elif self.path == "/api/worktree-diff":
+                    result, status = state.worktree_diff(body), 200
                 elif self.path == "/api/commit-pulls":
                     result, status = state.commit_pulls(body), 200
                 elif self.path in github_actions:

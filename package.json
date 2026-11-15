@@ -1,0 +1,7 @@
+{
+  "name": "commitandsee",
+  "private": true,
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

@@ -85,6 +85,36 @@ focus; a disappearing worktree returns focus to its review panel; the repository
 dialog wraps keyboard focus at its boundaries. Automated checks cover desktop,
 mobile, and dialog states, with manual keyboard assertions in the browser suite.
 
+## Working-tree diff review — owner selections November 14, 2026
+
+OWNER INTENT: compare the working tree with HEAD using separate staged and
+unstaged views, identify untracked files, expand a file to read its diff, and show
+a compact overview of file counts, change types, additions, and deletions.
+
+The owner selected nested Staged / Unstaged / Untracked views inside the existing
+worktree disclosure. The overview precedes the tabs; file rows identify their Git
+change type and expand in place. The existing black/navy glass direction, emerald
+and indigo accents, review hierarchy, responsive behavior, and reduced-motion
+handling remain unchanged.
+
+The owner selected bounded on-demand diff retrieval through the existing local
+Python server. The snapshot keeps status, fingerprints, and aggregate counts;
+opening a file sends its observed repository, worktree, layer, path, and fingerprint
+to a same-origin endpoint. The endpoint accepts only registered local worktrees and
+observed paths, rechecks the fingerprint before and after reading, disables external
+diffs and text conversion, and returns at most 512 KiB / 4,000 displayed lines.
+Binary content is labeled but not rendered. Diff content stays outside snapshots
+and exports. No package, external asset, paid service, or repository write was added.
+AGENT ADDITION: none.
+
+First implemented proof: four focused Python tests passed for staged/unstaged/
+untracked separation, unobserved and stale-request rejection, and loopback serving.
+A live browser flow against this checkout expanded the Unstaged dashboard file and
+rendered its real diff; desktop and emulated 390x844 checks reported no document or
+change-panel overflow. The optional Playwright regression is present but was not
+executed in this restored checkout because the Playwright module is not installed.
+These are local implementation checks, not owner visual acceptance or release proof.
+
 ## Social preview — owner direction selected November 5, 2026
 
 OWNER INTENT: a product-first GitHub sharing image, with the CommitandSee name,

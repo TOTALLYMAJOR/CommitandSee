@@ -80,6 +80,13 @@ async function fixture(t, options = {}) {
     const url = new URL(route.request().url());
     assert.equal(url.origin, origin, 'fixture does not call external services');
     if (url.pathname === '/api/commit-pulls' && options.pulls) return options.pulls(route);
+    if (url.pathname === '/api/worktree-diff') {
+      if (options.diff) return options.diff(route, data);
+      const body = route.request().postDataJSON();
+      return route.fulfill({json: {path: body.path, layer: body.layer,
+        diff: '--- a/' + body.path + '\n+++ b/' + body.path + '\n@@ -1 +1 @@\n-old\n+new',
+        additions: 1, deletions: 1, binary: false, truncated: false}});
+    }
     if (url.pathname === '/api/snapshot') {
       if (options.snapshot) return options.snapshot(route, data);
       return route.fulfill({json: data});
@@ -106,7 +113,7 @@ async function until(check, message) {
 test('automatic refresh preserves chart date/focus and expanded worktree details', async t => {
   const {page, data} = await fixture(t);
   const detail = page.locator('#work-table .files').first();
-  await detail.locator('summary').click();
+  await detail.locator(':scope > summary').click();
   const plot = page.locator('#commits-chart [role=slider]');
   await plot.focus();
   await plot.press('ArrowRight');
@@ -144,12 +151,45 @@ test('automatic refresh preserves chart date/focus and expanded worktree details
   await third;
   await until(() => page.locator('#refresh-button').isEnabled(), 'third refresh completes');
   assert.equal(await remove.evaluate(node => node === document.activeElement), true, 'repository action keeps keyboard focus');
-  await detail.locator('summary').focus();
+  await detail.locator(':scope > summary').focus();
   const fourth = page.waitForResponse('**/api/snapshot');
   await page.clock.fastForward(3000);
   await fourth;
   await until(() => page.locator('#refresh-button').isEnabled(), 'fourth refresh completes');
-  assert.equal(await detail.locator('summary').evaluate(node => node === document.activeElement), true, 'worktree disclosure keeps keyboard focus');
+  assert.equal(await detail.locator(':scope > summary').evaluate(node => node === document.activeElement), true, 'worktree disclosure keeps keyboard focus');
+});
+
+test('worktree disclosure separates layers and loads bounded file diffs on demand', async t => {
+  const requests = [];
+  const {page} = await fixture(t, {diff: route => {
+    const body = route.request().postDataJSON();
+    requests.push(body);
+    return route.fulfill({json: {path: body.path, layer: body.layer,
+      diff: '--- a/' + body.path + '\n+++ b/' + body.path + '\n@@ -1 +1 @@\n-old\n+new',
+      additions: 1, deletions: 1, binary: false, truncated: false}});
+  }});
+  const worktree = page.locator('#work-table details.files').first();
+  await worktree.locator(':scope > summary').click();
+  assert.match(await worktree.locator(':scope > summary').textContent(), /changed files.*\+\d+.*−\d+/);
+  const tabs = worktree.getByRole('tab');
+  assert.deepEqual(await tabs.allTextContents(), ['Staged · 1', 'Unstaged · 2', 'Untracked · 0']);
+  await worktree.getByRole('tab', {name: /^Unstaged/}).click();
+  const file = worktree.locator('.change-panel:not([hidden]) .file-diff').first();
+  await file.locator('summary').click();
+  await until(async () => (await file.locator('.diff-output').textContent()).includes('+new'), 'diff loads');
+  assert.equal(requests.length, 1, 'expansion makes one on-demand request');
+  assert.equal(requests[0].layer, 'unstaged');
+  assert.ok(requests[0].fingerprint, 'observed fingerprint guards the request');
+  await file.locator('summary').focus();
+  const response = page.waitForResponse('**/api/snapshot');
+  await page.clock.fastForward(3000);
+  await response;
+  await until(() => page.locator('#refresh-button').isEnabled(), 'refresh completes');
+  assert.equal(await worktree.evaluate(node => node.open), true, 'worktree stays expanded');
+  assert.equal(await worktree.getByRole('tab', {name: /^Unstaged/}).getAttribute('aria-selected'), 'true');
+  assert.equal(await file.evaluate(node => node.open), true, 'file diff stays expanded');
+  assert.equal(await file.locator('summary').evaluate(node => node === document.activeElement), true, 'file focus is restored');
+  assert.equal(requests.length, 1, 'unchanged diff is served from the bounded in-memory cache');
 });
 
 test('late add success preserves a reopened dialog and its newer draft', async t => {
