@@ -6,7 +6,8 @@ uses `%LOCALAPPDATA%\CommitandSee`, starts on an available loopback port, checks
 readiness, and then opens the default browser. It leaves the source CLI unchanged.
 
 The current recipe builds **0.5.0-rc.2**, adding local change and saved-version
-inspections, automatic selection updates, and bulk GitHub repository selection.
+inspections, automatic selection updates, bulk GitHub repository selection, and
+an embedded CommitandSee icon for the executable and Windows taskbar.
 The prior 0.4.0-rc.1 build includes chart drill-down, finer time
 buckets, PR grouping, range zoom, and equal-duration comparisons.
 The older 0.2.0-rc.1 ZIP and tag are
@@ -63,6 +64,9 @@ the working checkout wholesale or includes private configuration, registry, stat
 Git metadata, screenshots, or public-repository caches. `BUILD-INFO.json` identifies
 the source hashes and tool versions; `BUILD-DEPENDENCIES.txt` records resolved
 build dependencies. A digest match is provenance, not functional acceptance.
+The checked-in `CommitandSee.ico` is generated deterministically from the C+S
+monogram by `python packaging/generate_icon.py`; package builds consume the icon
+directly and do not require Pillow at runtime.
 
 Run focused launcher tests with `python -B -m unittest -v test_portable_launcher`.
 The native executable additionally needs HTTP, add/remove, restart persistence,

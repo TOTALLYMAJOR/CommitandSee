@@ -1,6 +1,13 @@
 # Release notes
 
-## Unreleased - local change insights (0.5.0-rc.2 candidate)
+## v0.5.0-rc.2 - local insights, working-tree review, and Windows identity
+
+- Expand each worktree into separate staged, unstaged, and untracked views, then
+  request bounded per-file diffs only when needed. Diff content stays out of
+  saved observations and exports; binary and stale results remain explicit.
+- Give the portable executable and Windows taskbar a branded C+S monogram icon.
+  The deterministic multi-resolution asset matches the existing dark-green,
+  mint, and gold visual language without adding a runtime dependency.
 
 - Update comparisons when repository, source, or target selections change;
   preserve compatible choices and recover automatically from a busy prior scan.

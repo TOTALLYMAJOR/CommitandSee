@@ -140,6 +140,22 @@ This is a startup/distribution addition within the existing app direction; no
 new app skin, installed service, or automatic updater is introduced. Native
 executable validation is recorded separately in VERIFICATION.md.
 
+## Windows application icon — owner selections November 15, 2026
+
+OWNER INTENT: give CommitandSee a recognizable icon when the portable executable
+appears in the Windows taskbar. The owner selected the C+S monogram direction and
+the deterministic Pillow generation pipeline; no custom adjustment was requested.
+
+AGENT INFERENCE: use a dark-green rounded tile with a mint C and gold S, matching
+the README banner while remaining text-free and legible at small taskbar sizes.
+The letters are custom geometric strokes rather than a bundled font. The checked-in
+PNG is the design proof and the multi-resolution ICO is embedded by PyInstaller.
+
+Constraints and assumptions: preserve the existing dashboard visual direction,
+add no runtime dependency, include 16- through 256-pixel icon frames, and keep the
+asset regenerable. The first observable proof is the generated PNG; final proof is
+the icon extracted from and displayed by the packaged executable on Windows.
+
 ## GitHub repository picker — owner selections November 5, 2026
 
 OWNER INTENT: connect a GitHub account, search the repositories it can access,

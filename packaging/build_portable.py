@@ -23,6 +23,7 @@ INPUTS = (
     'github_auth.py', 'authenticated_repositories.py', 'github_app_defaults.json',
     'docs/GITHUB-APP-SETUP.md',
     'demo.json', 'LICENSE', 'packaging/CommitandSee.spec',
+    'packaging/CommitandSee.ico',
     'packaging/requirements-build.txt', 'packaging/build-windows.ps1',
     'packaging/build_portable.py', 'packaging/START-HERE.txt',
     'packaging/THIRD-PARTY-NOTICES.txt', 'packaging/README.md',

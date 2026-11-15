@@ -604,3 +604,42 @@ onboarding, persistence, bundled settings/guide, and shutdown checks with Python
 absent from the child PATH. GitHub behavior uses controlled provider fixtures;
 this follow-up did not authorize a real GitHub account or import user repositories.
 The build remains an unsigned local candidate, not a published release.
+
+## Windows identity and 0.5.0-rc.2 release candidate (2026-11-15)
+
+The owner selected a C+S monogram using the existing dark-green, mint, and gold
+visual language, generated deterministically with Pillow. The checked-in ICO has
+nine frames from 16 through 256 pixels and is bound into the PyInstaller recipe.
+Icon regeneration and packaging-wiring tests passed **2/2**. Windows Shell
+successfully extracted the branded icon from the built executable; the retained
+PNG proof has SHA-256
+`849cb41bd653ada6c3ea7fe90d4bcc1b378dc4f9c750da55594563c3c3105214`.
+The live taskbar rendering itself was not captured, so this establishes executable
+icon embedding and Shell association rather than owner visual acceptance in the
+actual taskbar.
+
+The final native Windows `python -B -m unittest discover -v` run used a
+repository-local temporary directory to avoid Windows shortening the account's
+default temporary path. It completed **188 tests with zero failures/errors and 9
+platform skips** in 348.673 seconds. The first sandbox run was invalidated by Git
+ownership checks, and a prior controlled full run exposed three timing-sensitive
+failures while browser download/tests were concurrent; each passed independently
+before the final full run passed. Chromium browser tests completed **23 passes,
+zero failures, and one optional accessibility skip**.
+
+The isolated native build produced
+`CommitandSee-0.5.0-rc.2-Windows-x64-8c9b97c5253b.zip`, **11,109,717 bytes**,
+SHA-256 `5daf2d068c1e50b16803bc04807a4d6b8b2aba9ae8a1d493f4f65f06bbe94757`.
+Its source-input digest is
+`8c9b97c5253b2285583fe9032629002699a3c4e5f8d38a345b86d4dfea0a8ac8`.
+All **23 source-input hashes** match, all **682 ZIP entries** read successfully,
+the checksum sidecar matches, and the private-path scan found no configuration,
+observation, registry/SQLite, or Git metadata paths.
+
+The extracted package passed `packaging/smoke_portable.py --github-checks`:
+onboarding, HTML/JSON service, bundled timezone and publisher defaults/setup guide,
+add/observe/remove persistence across restarts, cleared auth state, explicit disabled
+publisher behavior, and graceful Ctrl+Break shutdown. Python was absent from the
+child PATH; repository and extracted-bundle bytes remained unchanged. This did not
+test a clean Windows installation, SmartScreen reputation, signing, actual browser
+launch, native GitHub authorization/private access, or broad accessibility.

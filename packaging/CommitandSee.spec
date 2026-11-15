@@ -20,5 +20,6 @@ exe = EXE(
     pyz, a.scripts, [], exclude_binaries=True, name='CommitandSee',
     debug=False, bootloader_ignore_signals=False, strip=False, upx=False,
     console=True, disable_windowed_traceback=False,
+    icon=str(root / 'packaging' / 'CommitandSee.ico'),
 )
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='CommitandSee')
